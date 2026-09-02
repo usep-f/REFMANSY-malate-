@@ -129,14 +129,14 @@ function renderUsersTable(list) {
                     <div class="avatar-circle"><i class="fa-solid fa-user"></i></div>
                     <div>
                         <strong>${escapeHtml(user.fullname || user.username)}</strong>
-                        <br><small style="color: #64748b;">@${escapeHtml(user.username)}</small>
                     </div>
                 </div>
             </td>
+            <td>@${escapeHtml(user.username)}</td>
             <td>${escapeHtml(user.email)}</td>
             <td>${roleBadge}</td>
-            <td>${statusBadge}</td>
             <td>${user.dateCreated || "N/A"}</td>
+            <td>${statusBadge}</td>
             <td>
                 <div class="table-actions">
                     <button type="button" class="btn-action edit-user-btn" title="Edit User">

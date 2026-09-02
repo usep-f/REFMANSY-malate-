@@ -121,19 +121,21 @@ function renderTable(files) {
 
     files.forEach((file, index) => {
         const row = document.createElement("tr");
+        const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
         const statusBadge =
             file.status === "approved"
-                ? `<span class="status-badge status-approved"><i class="fa-solid fa-circle-check"></i> Approved</span>`
+                ? `<span class="status-label status-approved"><i class="fa-solid fa-circle-check"></i> Approved</span>`
                 : file.status === "rejected"
-                ? `<span class="status-badge status-rejected"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>`
-                : `<span class="status-badge status-pending"><i class="fa-solid fa-clock"></i> Pending</span>`;
+                ? `<span class="status-label status-rejected"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>`
+                : `<span class="status-label status-pending"><i class="fa-solid fa-clock"></i> Pending</span>`;
 
         row.innerHTML = `
+            <td><strong>${displayId}</strong></td>
             <td>
                 <div class="file-title-cell">
                     <strong>${escapeHtml(file.title)}</strong>
-                    <small>${escapeHtml(file.fileName || "PDF Document")}</small>
+                    <br><small style="color: #64748b;">${escapeHtml(file.fileName || "PDF Document")}</small>
                 </div>
             </td>
             <td>${escapeHtml(file.researcher)}</td>
@@ -142,12 +144,12 @@ function renderTable(files) {
             <td>${statusBadge}</td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="btn-action view-btn" title="Review & Details">
+                    <button type="button" class="view-button view-btn" title="Review & Details">
                         <i class="fa-regular fa-eye"></i> View
                     </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="btn-action download-btn" title="Download Document">
+                            ? `<button type="button" class="view-button download-btn" title="Download Document" style="background-color: var(--dark-blue); margin-left: 5px;">
                                 <i class="fa-solid fa-download"></i>
                                </button>`
                             : ""
@@ -176,6 +178,20 @@ function setupModal() {
     if (reviewModal) {
         reviewModal.addEventListener("click", function (e) {
             if (e.target === reviewModal) closeModal();
+        });
+    }
+
+    const viewDocBtn = document.getElementById("viewDocumentButton");
+    if (viewDocBtn) {
+        viewDocBtn.addEventListener("click", async function () {
+            if (selectedFile && selectedFile.filePath) {
+                await window.refmansyApi.storage.triggerBrowserDownload(
+                    selectedFile.filePath,
+                    selectedFile.fileName
+                );
+            } else {
+                alert("No document file is attached to this submission.");
+            }
         });
     }
 

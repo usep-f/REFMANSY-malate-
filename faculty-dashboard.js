@@ -78,16 +78,22 @@ function renderStatusUpdates() {
         const item = document.createElement("div");
         item.className = "status-update-item";
 
-        const badge =
-            file.status === "approved"
-                ? `<span class="status-badge status-approved"><i class="fa-solid fa-circle-check"></i> Approved</span>`
-                : `<span class="status-badge status-rejected"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>`;
+        const isApproved = file.status === "approved";
+        const iconClass = isApproved ? "fa-circle-check" : "fa-circle-xmark";
+        const iconBgClass = isApproved ? "icon-approved" : "icon-rejected";
+
+        const badge = isApproved
+            ? `<span class="status-badge status-approved"><i class="fa-solid fa-circle-check"></i> Approved</span>`
+            : `<span class="status-badge status-rejected"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>`;
 
         item.innerHTML = `
+            <div class="update-icon ${iconBgClass}">
+                <i class="fa-solid ${iconClass}"></i>
+            </div>
             <div class="update-info">
                 <h4>${escapeHtml(file.title)}</h4>
                 <p>${file.reviewComment ? escapeHtml(file.reviewComment) : "Status updated by administrator."}</p>
-                <small>${file.reviewedDate || file.dateUploaded || "Recently"}</small>
+                <small><i class="fa-regular fa-clock"></i> ${file.reviewedDate || file.dateUploaded || "Recently"}</small>
             </div>
             <div class="update-badge">${badge}</div>
         `;

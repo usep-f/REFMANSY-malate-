@@ -60,6 +60,21 @@ function updateDashboardMetrics() {
 
     const legRej = document.getElementById("legendRejected");
     if (legRej) legRej.textContent = rejected;
+
+    const donutChart = document.getElementById("statusDonutChart") || document.querySelector(".donut-chart");
+    if (donutChart) {
+        if (totalFiles === 0) {
+            donutChart.style.background = "var(--border-color, #e4e9ee)";
+        } else {
+            const approvedPct = (approved / totalFiles) * 100;
+            const pendingPct = approvedPct + (pending / totalFiles) * 100;
+            donutChart.style.background = `conic-gradient(
+                var(--approved-blue, #68a9e1) 0% ${approvedPct}%,
+                var(--pending-blue, #bed8ed) ${approvedPct}% ${pendingPct}%,
+                var(--rejected-gray, #d7e0e5) ${pendingPct}% 100%
+            )`;
+        }
+    }
 }
 
 function renderRecentFiles() {

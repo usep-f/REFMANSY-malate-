@@ -99,26 +99,28 @@ function renderTable(files) {
     pendingFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        pendingFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table">No pending research files to review.</td></tr>`;
+        pendingFilesTable.innerHTML = `<tr><td colspan="7" class="empty-table">No pending research files to review.</td></tr>`;
         return;
     }
 
     files.forEach((file, index) => {
         const row = document.createElement("tr");
+        const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
         row.innerHTML = `
+            <td><strong>${displayId}</strong></td>
             <td>
                 <div class="file-title-cell">
                     <strong>${escapeHtml(file.title)}</strong>
-                    <small>${escapeHtml(file.fileName || "PDF Document")}</small>
+                    <br><small style="color: #64748b;">${escapeHtml(file.fileName || "PDF Document")}</small>
                 </div>
             </td>
             <td>${escapeHtml(file.researcher)}</td>
             <td>${escapeHtml(file.category)}</td>
             <td>${file.dateUploaded || "N/A"}</td>
-            <td><span class="status-badge status-pending">Pending Review</span></td>
+            <td><span class="status-label status-pending">Pending Review</span></td>
             <td>
-                <button type="button" class="btn-review review-btn">
+                <button type="button" class="review-button review-btn">
                     <i class="fa-solid fa-magnifying-glass"></i> Review
                 </button>
             </td>
@@ -136,6 +138,20 @@ function setupModal() {
     if (reviewModal) {
         reviewModal.addEventListener("click", function (e) {
             if (e.target === reviewModal) closeModal();
+        });
+    }
+
+    const viewDocBtn = document.getElementById("viewDocumentButton");
+    if (viewDocBtn) {
+        viewDocBtn.addEventListener("click", async function () {
+            if (selectedFile && selectedFile.filePath) {
+                await window.refmansyApi.storage.triggerBrowserDownload(
+                    selectedFile.filePath,
+                    selectedFile.fileName
+                );
+            } else {
+                alert("No document file is attached to this submission.");
+            }
         });
     }
 

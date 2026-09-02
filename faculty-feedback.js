@@ -139,7 +139,7 @@ function renderFeedbackHistory(list) {
     feedbackHistoryTable.innerHTML = "";
 
     if (!list || list.length === 0) {
-        feedbackHistoryTable.innerHTML = `<tr><td colspan="5" class="empty-message">You have not submitted any feedback yet.</td></tr>`;
+        feedbackHistoryTable.innerHTML = `<tr><td colspan="7" class="empty-message">You have not submitted any feedback yet.</td></tr>`;
         return;
     }
 
@@ -155,9 +155,11 @@ function renderFeedbackHistory(list) {
 
         row.innerHTML = `
             <td><strong>${displayId}</strong></td>
+            <td>${escapeHtml(fb.type || "General")}</td>
             <td><strong>${escapeHtml(fb.subject)}</strong></td>
             <td>${dateStr}</td>
             <td>${statusBadge}</td>
+            <td>${fb.admin_reply ? escapeHtml(fb.admin_reply) : "<em style='color: #94a3b8;'>Pending reply</em>"}</td>
             <td>
                 <button type="button" class="btn-view-feedback">
                     <i class="fa-regular fa-eye"></i> View

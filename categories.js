@@ -99,15 +99,17 @@ function renderCategories(list) {
     list.forEach(cat => {
         const row = document.createElement("tr");
         const fileCount = allFiles.filter(f => f.category === cat.name).length;
+        const dateStr = cat.created_at ? new Date(cat.created_at).toLocaleDateString() : "Active";
 
         row.innerHTML = `
             <td><strong>${escapeHtml(cat.name)}</strong></td>
             <td>${escapeHtml(cat.description || "—")}</td>
-            <td>${fileCount} file${fileCount === 1 ? "" : "s"}</td>
+            <td><span class="file-count-badge">${fileCount} file${fileCount === 1 ? "" : "s"}</span></td>
+            <td>${dateStr}</td>
             <td>
                 <div class="table-actions">
                     <button type="button" class="btn-action edit-cat-btn" title="Edit Category">
-                        <i class="fa-solid fa-pen"></i>
+                        <i class="fa-solid fa-pen"></i> Edit
                     </button>
                     <button type="button" class="btn-action delete-cat-btn" title="Delete Category">
                         <i class="fa-solid fa-trash"></i>

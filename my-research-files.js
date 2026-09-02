@@ -117,19 +117,21 @@ function renderTable(files) {
     researchFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        researchFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table">No research files found matching selected criteria.</td></tr>`;
+        researchFilesTable.innerHTML = `<tr><td colspan="7" class="empty-table">No research files found matching selected criteria.</td></tr>`;
         return;
     }
 
     files.forEach((file, index) => {
         const row = document.createElement("tr");
+        const displayId = "RF-" + String(index + 1).padStart(4, "0");
         const statusBadge = getStatusBadge(file.status);
 
         row.innerHTML = `
+            <td><strong>${displayId}</strong></td>
             <td>
                 <div class="file-title-cell">
                     <strong>${escapeHtml(file.title)}</strong>
-                    <small>${escapeHtml(file.fileName || "PDF Document")}</small>
+                    <br><small style="color: #64748b;">${escapeHtml(file.fileName || "PDF Document")}</small>
                 </div>
             </td>
             <td>${escapeHtml(file.category)}</td>
@@ -138,12 +140,12 @@ function renderTable(files) {
             <td>${file.reviewComment ? escapeHtml(file.reviewComment) : "<em>No comment</em>"}</td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="btn-action view-btn" title="View Details">
+                    <button type="button" class="view-button view-btn" title="View Details">
                         <i class="fa-regular fa-eye"></i> View
                     </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="btn-action download-btn" title="Download File">
+                            ? `<button type="button" class="view-button download-btn" title="Download File" style="background-color: var(--dark-blue); margin-left: 5px;">
                                 <i class="fa-solid fa-download"></i>
                                </button>`
                             : ""

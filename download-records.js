@@ -125,24 +125,20 @@ function renderAvailableFiles(files) {
     downloadFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        downloadFilesTable.innerHTML = `<tr><td colspan="5" class="empty-message">No research files available for download.</td></tr>`;
+        downloadFilesTable.innerHTML = `<tr><td colspan="7" class="empty-message">No research files available for download.</td></tr>`;
         return;
     }
 
     files.forEach((file, index) => {
         const row = document.createElement("tr");
-        const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
         row.innerHTML = `
-            <td><strong>${displayId}</strong></td>
-            <td>
-                <div class="file-title-cell">
-                    <strong>${escapeHtml(file.title)}</strong>
-                    <small>${escapeHtml(file.fileName || "PDF Document")}</small>
-                </div>
-            </td>
+            <td><strong>${escapeHtml(file.title)}</strong></td>
+            <td>${escapeHtml(file.researcher)}</td>
             <td>${escapeHtml(file.category)}</td>
-            <td>${escapeHtml(file.researcher)} (${file.publicationYear})</td>
+            <td>${escapeHtml(file.publicationYear || "N/A")}</td>
+            <td><small style="color: #64748b;">${escapeHtml(file.fileName || "PDF Document")}</small></td>
+            <td>${file.fileSize || "PDF"}</td>
             <td>
                 <button type="button" class="btn-download-action download-action-btn">
                     <i class="fa-solid fa-download"></i> Download

@@ -79,13 +79,18 @@ function renderCategories(list) {
         const count = approvedFiles.filter(f => f.category === cat.name).length;
 
         card.innerHTML = `
-            <div class="category-icon">
-                <i class="fa-solid fa-folder-open"></i>
+            <div class="category-card-top">
+                <div class="category-icon-box">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <span class="file-count-pill"><i class="fa-solid fa-file-lines"></i> ${count} approved</span>
             </div>
-            <div class="category-info">
+            <div class="category-card-body">
                 <h3>${escapeHtml(cat.name)}</h3>
                 <p>${escapeHtml(cat.description || "Research documents and publications.")}</p>
-                <span class="file-count">${count} approved file${count === 1 ? "" : "s"}</span>
+            </div>
+            <div class="category-card-action">
+                <span>Browse Papers <i class="fa-solid fa-arrow-right"></i></span>
             </div>
         `;
 

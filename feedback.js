@@ -105,8 +105,9 @@ function renderTable(list) {
         return;
     }
 
-    list.forEach(fb => {
+    list.forEach((fb, index) => {
         const row = document.createElement("tr");
+        const displayId = "FB-" + String(index + 1).padStart(4, "0");
         const dateStr = fb.created_at ? new Date(fb.created_at).toLocaleDateString() : "N/A";
 
         const statusBadge =
@@ -117,11 +118,12 @@ function renderTable(list) {
                 : `<span class="badge-new"><i class="fa-solid fa-bell"></i> New</span>`;
 
         row.innerHTML = `
+            <td><strong>${displayId}</strong></td>
             <td>
                 <strong>${escapeHtml(fb.user_name || "Faculty")}</strong>
                 <br><small style="color: #64748b;">${escapeHtml(fb.user_email || "")}</small>
             </td>
-            <td>General Inquiry</td>
+            <td>${escapeHtml(fb.type || "General Inquiry")}</td>
             <td>${escapeHtml(fb.subject)}</td>
             <td>${dateStr}</td>
             <td>${statusBadge}</td>
