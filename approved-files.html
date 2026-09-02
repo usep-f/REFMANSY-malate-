@@ -12,6 +12,7 @@
     >
 
     <link rel="stylesheet" href="approved-files.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 <body>
@@ -97,7 +98,7 @@
 
                 <div>
                     <h2>Approved Files</h2>
-                    <p>View all approved research files.</p>
+                    <p>View all approved research files and generate hard-copy QR stickers.</p>
                 </div>
 
                 <div class="header-user">
@@ -137,7 +138,7 @@
                     <div>
                         <h3>Approved Research Files</h3>
                         <p>
-                            Search and review approved research submissions.
+                            Search and review approved research submissions, download documents, or print physical QR stickers.
                         </p>
                     </div>
 
@@ -296,11 +297,100 @@
 
                 <button
                     type="button"
+                    id="modalQrButton"
+                    class="qr-modal-button"
+                    style="background-color: var(--dark-blue); color: white;"
+                >
+                    <i class="fa-solid fa-qrcode"></i>
+                    QR Sticker
+                </button>
+
+                <button
+                    type="button"
                     id="viewFileButton"
                     class="view-file-button"
                 >
                     <i class="fa-regular fa-file"></i>
                     View File
+                </button>
+
+            </div>
+
+        </section>
+
+    </div>
+
+    <!-- QR Code & Printable Sticker Modal -->
+    <div class="modal-overlay" id="qrCodeModal">
+
+        <section class="details-modal qr-modal-card">
+
+            <div class="modal-header">
+
+                <div>
+                    <h3>Hard Copy QR Code & Sticker</h3>
+                    <p>Generate and print physical labels for library holdings.</p>
+                </div>
+
+                <button type="button" id="closeQrModalButton">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+            </div>
+
+            <div class="qr-modal-body">
+
+                <!-- Printable Sticker Label Preview -->
+                <div class="sticker-label-card" id="printableSticker">
+
+                    <div class="sticker-header">
+                        <div class="sticker-brand">
+                            <i class="fa-solid fa-book-bookmark"></i>
+                            <span>REFMANSY REPOSITORY</span>
+                        </div>
+                        <span class="sticker-id-badge" id="stickerDocId">RF-0001</span>
+                    </div>
+
+                    <div class="sticker-content">
+                        <div class="sticker-meta">
+                            <h4 class="sticker-title" id="stickerTitle">Research Title</h4>
+                            <p class="sticker-author" id="stickerAuthor">By Researcher Name</p>
+                            <span class="sticker-category" id="stickerCategory">Category</span>
+                        </div>
+
+                        <div class="sticker-qr-wrapper">
+                            <div id="stickerQrCanvas" class="qr-canvas-holder"></div>
+                            <span class="qr-scan-hint">Scan for Soft Copy</span>
+                        </div>
+                    </div>
+
+                    <div class="sticker-footer">
+                        <span>Official Library Physical Copy • Refmansy Digital Archive</span>
+                    </div>
+
+                </div>
+
+                <!-- QR Link & Actions -->
+                <div class="qr-link-section">
+                    <label>Public QR Download URL</label>
+                    <div class="qr-link-box">
+                        <input type="text" id="qrLinkInput" readonly value="">
+                        <button type="button" id="copyQrLinkBtn" class="copy-link-btn" title="Copy Scan Link">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-actions qr-actions">
+
+                <button type="button" id="downloadQrPngBtn" class="download-qr-btn">
+                    <i class="fa-solid fa-download"></i> Download PNG
+                </button>
+
+                <button type="button" id="printStickerBtn" class="print-sticker-btn">
+                    <i class="fa-solid fa-print"></i> Print Sticker Label
                 </button>
 
             </div>

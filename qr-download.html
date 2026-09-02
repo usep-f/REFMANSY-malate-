@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REFMANSY - Download Research Document</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="qr-download.css">
+</head>
+<body>
+    <div class="qr-download-container">
+        <!-- Brand Header -->
+        <header class="download-header">
+            <div class="brand-logo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-name">REFMANSY</span>
+                    <span class="brand-tag">Repository & Archive</span>
+                </div>
+            </div>
+            <span class="qr-scan-badge">
+                <i class="fa-solid fa-qrcode"></i> Physical Copy Scan
+            </span>
+        </header>
+
+        <!-- Main Card -->
+        <main class="download-card" id="downloadCard">
+            <!-- Loading State -->
+            <div class="state-view loading-view" id="loadingView">
+                <div class="pulse-spinner">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                </div>
+                <h2>Locating Research Document</h2>
+                <p>Verifying thesis record and generating your soft-copy download...</p>
+            </div>
+
+            <!-- Ready / Downloading State -->
+            <div class="state-view success-view" id="successView" style="display: none;">
+                <div class="status-indicator">
+                    <div class="icon-circle success">
+                        <i class="fa-solid fa-file-pdf"></i>
+                    </div>
+                </div>
+
+                <span class="doc-badge" id="docCategory">Category</span>
+                <h1 class="doc-title" id="docTitle">Thesis Title</h1>
+                <p class="doc-meta" id="docResearcher">By Researcher Name</p>
+
+                <div class="doc-details-pill">
+                    <span id="docYear"><i class="fa-regular fa-calendar"></i> Year</span>
+                    <span class="divider">•</span>
+                    <span id="docSize"><i class="fa-regular fa-file-lines"></i> PDF Document</span>
+                </div>
+
+                <div class="download-action-box">
+                    <div class="download-status-banner">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span>Soft-copy download triggered!</span>
+                    </div>
+
+                    <a href="#" class="primary-download-btn" id="manualDownloadBtn" download>
+                        <i class="fa-solid fa-arrow-down-to-line"></i>
+                        <span>Download Soft Copy (PDF)</span>
+                    </a>
+
+                    <p class="download-hint">
+                        If your download didn't begin automatically, tap the button above.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div class="state-view error-view" id="errorView" style="display: none;">
+                <div class="status-indicator">
+                    <div class="icon-circle error">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+                <h2>Document Unavailable</h2>
+                <p id="errorMessage">This research document is not accessible or has not been approved for public soft-copy download.</p>
+                <div class="error-actions">
+                    <a href="index.html" class="secondary-btn">
+                        <i class="fa-solid fa-house"></i> Return to REFMANSY Home
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="download-footer">
+            <p>&copy; Refmansy Reference Management System • Digital Library Repository</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="supabase-client.js"></script>
+    <script src="qr-download.js"></script>
+</body>
+</html>

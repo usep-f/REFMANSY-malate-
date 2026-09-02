@@ -124,9 +124,12 @@ function renderTable(files) {
                     <button type="button" class="view-button view-btn" title="View Details">
                         <i class="fa-regular fa-eye"></i> View
                     </button>
+                    <button type="button" class="view-button qr-btn" title="Hard-Copy QR Sticker" style="background-color: var(--dark-blue); margin-left: 5px;">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="Download Document" style="background-color: var(--dark-blue); margin-left: 5px;">
+                            ? `<button type="button" class="view-button download-btn" title="Download Document" style="background-color: var(--approved-green); margin-left: 5px;">
                                 <i class="fa-solid fa-download"></i>
                                </button>`
                             : ""
@@ -136,6 +139,11 @@ function renderTable(files) {
         `;
 
         row.querySelector(".view-btn").addEventListener("click", () => openModal(file));
+
+        const qrBtn = row.querySelector(".qr-btn");
+        if (qrBtn) {
+            qrBtn.addEventListener("click", () => openQrModal(file, displayId));
+        }
 
         const dlBtn = row.querySelector(".download-btn");
         if (dlBtn) {
@@ -148,7 +156,13 @@ function renderTable(files) {
     });
 }
 
+const qrCodeModal = document.getElementById("qrCodeModal");
+let activeQrFile = null;
+let activeDisplayId = "";
+
 function setupModal() {
+    setupQrModal();
+
     const closeBtn = document.getElementById("closeModalButton");
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
@@ -169,11 +183,143 @@ function setupModal() {
         });
     }
 
+    const modalQrBtn = document.getElementById("modalQrButton");
+    if (modalQrBtn) {
+        modalQrBtn.addEventListener("click", () => {
+            if (selectedFile) {
+                openQrModal(selectedFile, document.getElementById("modalFileId")?.textContent || "RF-0000");
+            }
+        });
+    }
+
     const pendBtn = document.getElementById("markPendingButton");
     if (pendBtn) pendBtn.addEventListener("click", () => changeStatus("pending"));
 
     const rejBtn = document.getElementById("rejectButton");
     if (rejBtn) rejBtn.addEventListener("click", () => changeStatus("rejected"));
+}
+
+function setupQrModal() {
+    const closeQrBtn = document.getElementById("closeQrModalButton");
+    if (closeQrBtn) closeQrBtn.addEventListener("click", closeQrModal);
+
+    if (qrCodeModal) {
+        qrCodeModal.addEventListener("click", function (e) {
+            if (e.target === qrCodeModal) closeQrModal();
+        });
+    }
+
+    const printBtn = document.getElementById("printStickerBtn");
+    if (printBtn) {
+        printBtn.addEventListener("click", () => {
+            window.print();
+        });
+    }
+
+    const copyBtn = document.getElementById("copyQrLinkBtn");
+    if (copyBtn) {
+        copyBtn.addEventListener("click", () => {
+            const input = document.getElementById("qrLinkInput");
+            if (input && input.value) {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    const originalHtml = copyBtn.innerHTML;
+                    copyBtn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+                    copyBtn.style.backgroundColor = "#dcfce7";
+                    copyBtn.style.color = "#15803d";
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalHtml;
+                        copyBtn.style.backgroundColor = "";
+                        copyBtn.style.color = "";
+                    }, 2000);
+                }).catch(() => {
+                    input.select();
+                    document.execCommand("copy");
+                });
+            }
+        });
+    }
+
+    const dlPngBtn = document.getElementById("downloadQrPngBtn");
+    if (dlPngBtn) {
+        dlPngBtn.addEventListener("click", downloadQrPng);
+    }
+}
+
+function openQrModal(file, displayId) {
+    activeQrFile = file;
+    activeDisplayId = displayId || ("RF-" + String(file.id).substring(0, 4).toUpperCase());
+
+    const sDocId = document.getElementById("stickerDocId");
+    if (sDocId) sDocId.textContent = activeDisplayId;
+
+    const sTitle = document.getElementById("stickerTitle");
+    if (sTitle) sTitle.textContent = file.title || "Untitled Research";
+
+    const sAuthor = document.getElementById("stickerAuthor");
+    if (sAuthor) sAuthor.textContent = file.researcher ? `By ${file.researcher}` : "Author unlisted";
+
+    const sCategory = document.getElementById("stickerCategory");
+    if (sCategory) sCategory.textContent = file.category || "Research Document";
+
+    // Format QR Download URL
+    const basePath = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
+    const qrUrl = `${basePath}/qr-download.html?id=${encodeURIComponent(file.id)}`;
+
+    const qrInput = document.getElementById("qrLinkInput");
+    if (qrInput) qrInput.value = qrUrl;
+
+    // Render QR Code Canvas
+    const canvasHolder = document.getElementById("stickerQrCanvas");
+    if (canvasHolder) {
+        canvasHolder.innerHTML = "";
+        if (typeof QRCode !== "undefined") {
+            new QRCode(canvasHolder, {
+                text: qrUrl,
+                width: 100,
+                height: 100,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } else {
+            canvasHolder.innerHTML = `<p style="font-size: 10px; color: red;">QR Engine Loading...</p>`;
+        }
+    }
+
+    if (qrCodeModal) qrCodeModal.classList.add("active");
+}
+
+function closeQrModal() {
+    if (qrCodeModal) qrCodeModal.classList.remove("active");
+    activeQrFile = null;
+}
+
+function downloadQrPng() {
+    const canvasHolder = document.getElementById("stickerQrCanvas");
+    if (!canvasHolder) return;
+
+    const canvas = canvasHolder.querySelector("canvas");
+    const img = canvasHolder.querySelector("img");
+
+    let dataUrl = null;
+    if (canvas) {
+        dataUrl = canvas.toDataURL("image/png");
+    } else if (img && img.src) {
+        dataUrl = img.src;
+    }
+
+    if (!dataUrl) {
+        alert("QR Code image is not yet rendered.");
+        return;
+    }
+
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    const safeTitle = (activeQrFile?.title || "research-qr").replace(/[^a-z0-9]/gi, "_").toLowerCase().substring(0, 30);
+    a.download = `QR_${activeDisplayId}_${safeTitle}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 function openModal(file) {
