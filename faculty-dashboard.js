@@ -20,7 +20,9 @@ window.refmansyAuthGuard.init("faculty", function (profile, user) {
 
 async function initializeDashboard() {
     try {
-        facultyFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table"><i class="fa-solid fa-spinner fa-spin"></i> Loading dashboard data...</td></tr>`;
+        if (facultyFilesTable) {
+            facultyFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table"><i class="fa-solid fa-spinner fa-spin"></i> Loading dashboard data...</td></tr>`;
+        }
 
         const [myFiles, approvedFiles, categories] = await Promise.all([
             window.refmansyApi.research.getMyFiles(currentProfile.id),
@@ -46,16 +48,17 @@ function updateDashboardMetrics() {
     const approved = facultyFiles.filter(f => f.status === "approved").length;
     const rejected = facultyFiles.filter(f => f.status === "rejected").length;
 
-    document.getElementById("totalUploads").textContent = total;
-    document.getElementById("pendingFiles").textContent = pending;
-    document.getElementById("approvedFiles").textContent = approved;
-    document.getElementById("rejectedFiles").textContent = rejected;
+    const totalEl = document.getElementById("totalMyFiles");
+    if (totalEl) totalEl.textContent = total;
 
-    const availableFilesEl = document.getElementById("availableApprovedFiles");
-    if (availableFilesEl) availableFilesEl.textContent = approvedSystemFiles.length;
+    const pendingEl = document.getElementById("totalPending");
+    if (pendingEl) pendingEl.textContent = pending;
 
-    const totalCategoriesEl = document.getElementById("totalCategories");
-    if (totalCategoriesEl) totalCategoriesEl.textContent = categoriesList.length;
+    const approvedEl = document.getElementById("totalApproved");
+    if (approvedEl) approvedEl.textContent = approved;
+
+    const rejectedEl = document.getElementById("totalRejected");
+    if (rejectedEl) rejectedEl.textContent = rejected;
 }
 
 function renderStatusUpdates() {
@@ -67,7 +70,7 @@ function renderStatusUpdates() {
         .slice(0, 4);
 
     if (recentlyUpdated.length === 0) {
-        statusUpdatesContainer.innerHTML = `<p class="empty-message">No recent submission status updates.</p>`;
+        statusUpdatesContainer.innerHTML = `<p class="empty-message">No submission status updates.</p>`;
         return;
     }
 
@@ -94,6 +97,7 @@ function renderStatusUpdates() {
 }
 
 function renderRecentFilesTable() {
+    if (!facultyFilesTable) return;
     facultyFilesTable.innerHTML = "";
 
     const recent = facultyFiles.slice(0, 5);
@@ -103,7 +107,7 @@ function renderRecentFilesTable() {
         return;
     }
 
-    recent.forEach((file, index) => {
+    recent.forEach(file => {
         const row = document.createElement("tr");
 
         const statusBadge =

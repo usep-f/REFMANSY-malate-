@@ -10,8 +10,11 @@ const researchFileInput = document.getElementById("researchFile");
 const fileUploadArea = document.getElementById("fileUploadArea");
 const uploadPlaceholder = document.getElementById("uploadPlaceholder");
 const selectedFileDisplay = document.getElementById("selectedFile");
+const selectedFileName = document.getElementById("selectedFileName");
+const selectedFileSize = document.getElementById("selectedFileSize");
 const formMessage = document.getElementById("formMessage");
 const submitButton = document.getElementById("submitButton");
+const existingFileMessage = document.getElementById("existingFileMessage");
 
 let selectedPDF = null;
 let existingFile = null;
@@ -37,6 +40,7 @@ async function initializePage() {
 // Load categories dynamically from Supabase
 async function loadCategoryOptions() {
     const categorySelect = document.getElementById("category");
+    if (!categorySelect) return;
     categorySelect.innerHTML = `<option value="">Select a category</option>`;
 
     try {
@@ -67,41 +71,56 @@ async function loadCategoryOptions() {
 }
 
 function setDefaultValues() {
-    document.getElementById("researcher").value =
-        currentProfile.full_name || currentProfile.username || "";
-    document.getElementById("publicationYear").value = new Date().getFullYear();
+    const researcherEl = document.getElementById("researcher");
+    if (researcherEl && currentProfile) {
+        researcherEl.value = currentProfile.full_name || currentProfile.username || "";
+    }
+    const pubYearEl = document.getElementById("publicationYear");
+    if (pubYearEl) {
+        pubYearEl.value = new Date().getFullYear();
+    }
 }
 
 // Setup file picker and drag-and-drop
 function setupFileUpload() {
-    document.getElementById("chooseFileButton").addEventListener("click", function () {
-        researchFileInput.click();
-    });
+    const chooseBtn = document.getElementById("chooseFileButton");
+    if (chooseBtn) {
+        chooseBtn.addEventListener("click", function () {
+            researchFileInput.click();
+        });
+    }
 
-    researchFileInput.addEventListener("change", function () {
-        if (this.files.length > 0) {
-            handleSelectedFile(this.files[0]);
-        }
-    });
+    if (researchFileInput) {
+        researchFileInput.addEventListener("change", function () {
+            if (this.files.length > 0) {
+                handleSelectedFile(this.files[0]);
+            }
+        });
+    }
 
-    document.getElementById("removeFileButton").addEventListener("click", removeSelectedFile);
+    const removeBtn = document.getElementById("removeFileButton");
+    if (removeBtn) {
+        removeBtn.addEventListener("click", removeSelectedFile);
+    }
 
-    fileUploadArea.addEventListener("dragover", function (e) {
-        e.preventDefault();
-        this.classList.add("dragging");
-    });
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            this.classList.add("dragging");
+        });
 
-    fileUploadArea.addEventListener("dragleave", function () {
-        this.classList.remove("dragging");
-    });
+        fileUploadArea.addEventListener("dragleave", function () {
+            this.classList.remove("dragging");
+        });
 
-    fileUploadArea.addEventListener("drop", function (e) {
-        e.preventDefault();
-        this.classList.remove("dragging");
-        if (e.dataTransfer.files.length > 0) {
-            handleSelectedFile(e.dataTransfer.files[0]);
-        }
-    });
+        fileUploadArea.addEventListener("drop", function (e) {
+            e.preventDefault();
+            this.classList.remove("dragging");
+            if (e.dataTransfer.files.length > 0) {
+                handleSelectedFile(e.dataTransfer.files[0]);
+            }
+        });
+    }
 }
 
 function handleSelectedFile(file) {
@@ -118,19 +137,19 @@ function handleSelectedFile(file) {
     }
 
     selectedPDF = file;
-    document.getElementById("fileNameDisplay").textContent = file.name;
-    document.getElementById("fileSizeDisplay").textContent = formatFileSize(file.size);
+    if (selectedFileName) selectedFileName.textContent = file.name;
+    if (selectedFileSize) selectedFileSize.textContent = formatFileSize(file.size);
 
-    uploadPlaceholder.style.display = "none";
-    selectedFileDisplay.style.display = "flex";
+    if (uploadPlaceholder) uploadPlaceholder.style.display = "none";
+    if (selectedFileDisplay) selectedFileDisplay.style.display = "flex";
     clearFormMessage();
 }
 
 function removeSelectedFile() {
     selectedPDF = null;
-    researchFileInput.value = "";
-    uploadPlaceholder.style.display = "block";
-    selectedFileDisplay.style.display = "none";
+    if (researchFileInput) researchFileInput.value = "";
+    if (uploadPlaceholder) uploadPlaceholder.style.display = "block";
+    if (selectedFileDisplay) selectedFileDisplay.style.display = "none";
 }
 
 // Check edit mode
@@ -142,26 +161,39 @@ async function checkEditMode() {
         existingFile = await window.refmansyApi.research.getFileById(editingFileId);
         if (!existingFile) return;
 
-        document.getElementById("pageTitle").textContent = "Edit Research Submission";
-        document.getElementById("pageDescription").textContent =
-            "Update your submission details or replace your research document.";
-        submitButton.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Changes`;
+        const pTitle = document.getElementById("pageTitle");
+        if (pTitle) pTitle.textContent = "Edit Research Submission";
+        const pDesc = document.getElementById("pageDescription");
+        if (pDesc) pDesc.textContent = "Update your submission details or replace your research document.";
+        if (submitButton) submitButton.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Save Changes`;
 
-        document.getElementById("title").value = existingFile.title || "";
-        document.getElementById("researcher").value = existingFile.researcher || "";
-        document.getElementById("coResearchers").value = existingFile.coResearchers || "";
-        document.getElementById("category").value = existingFile.category || "";
-        document.getElementById("publicationYear").value = existingFile.publicationYear || "";
-        document.getElementById("department").value = existingFile.department || "";
-        document.getElementById("researchType").value = existingFile.researchType || "";
-        document.getElementById("description").value = existingFile.description || "";
-        document.getElementById("keywords").value = existingFile.keywords || "";
+        const titleInput = document.getElementById("researchTitle");
+        if (titleInput) titleInput.value = existingFile.title || "";
+        const researcherInput = document.getElementById("researcher");
+        if (researcherInput) researcherInput.value = existingFile.researcher || "";
+        const coResInput = document.getElementById("coResearchers");
+        if (coResInput) coResInput.value = existingFile.coResearchers || "";
+        const catInput = document.getElementById("category");
+        if (catInput) catInput.value = existingFile.category || "";
+        const pubYearInput = document.getElementById("publicationYear");
+        if (pubYearInput) pubYearInput.value = existingFile.publicationYear || "";
+        const deptInput = document.getElementById("department");
+        if (deptInput) deptInput.value = existingFile.department || "";
+        const typeInput = document.getElementById("researchType");
+        if (typeInput) typeInput.value = existingFile.researchType || "";
+        const descInput = document.getElementById("description");
+        if (descInput) descInput.value = existingFile.description || "";
+        const kwInput = document.getElementById("keywords");
+        if (kwInput) kwInput.value = existingFile.keywords || "";
 
         if (existingFile.fileName) {
-            document.getElementById("fileNameDisplay").textContent = existingFile.fileName;
-            document.getElementById("fileSizeDisplay").textContent = existingFile.fileSize || "Existing Document";
-            uploadPlaceholder.style.display = "none";
-            selectedFileDisplay.style.display = "flex";
+            if (selectedFileName) selectedFileName.textContent = existingFile.fileName;
+            if (selectedFileSize) selectedFileSize.textContent = existingFile.fileSize || "Existing Document";
+            if (uploadPlaceholder) uploadPlaceholder.style.display = "none";
+            if (selectedFileDisplay) selectedFileDisplay.style.display = "flex";
+            if (existingFileMessage) {
+                existingFileMessage.textContent = `Current file: ${existingFile.fileName}. Uploading a new PDF will replace it.`;
+            }
         }
     } catch (err) {
         console.error("Error loading file for edit:", err);
@@ -170,18 +202,20 @@ async function checkEditMode() {
 
 // Form Submission
 function setupForm() {
+    if (!researchForm) return;
+
     researchForm.addEventListener("submit", async function (event) {
         event.preventDefault();
 
-        const title = document.getElementById("title").value.trim();
-        const researcher = document.getElementById("researcher").value.trim();
-        const coResearchers = document.getElementById("coResearchers").value.trim();
-        const category = document.getElementById("category").value.trim();
-        const publicationYear = document.getElementById("publicationYear").value.trim();
-        const department = document.getElementById("department").value.trim();
-        const researchType = document.getElementById("researchType").value.trim();
-        const description = document.getElementById("description").value.trim();
-        const keywords = document.getElementById("keywords").value.trim();
+        const title = (document.getElementById("researchTitle")?.value || "").trim();
+        const researcher = (document.getElementById("researcher")?.value || "").trim();
+        const coResearchers = (document.getElementById("coResearchers")?.value || "").trim();
+        const category = (document.getElementById("category")?.value || "").trim();
+        const publicationYear = (document.getElementById("publicationYear")?.value || "").trim();
+        const department = (document.getElementById("department")?.value || "").trim();
+        const researchType = (document.getElementById("researchType")?.value || "").trim();
+        const description = (document.getElementById("description")?.value || "").trim();
+        const keywords = (document.getElementById("keywords")?.value || "").trim();
 
         if (!title || !researcher || !category || !publicationYear) {
             showFormMessage("Please fill in all required fields.", "error");
@@ -240,11 +274,13 @@ function setupForm() {
 }
 
 function showFormMessage(text, type) {
+    if (!formMessage) return;
     formMessage.textContent = text;
     formMessage.className = "form-message " + type;
 }
 
 function clearFormMessage() {
+    if (!formMessage) return;
     formMessage.textContent = "";
     formMessage.className = "form-message";
 }

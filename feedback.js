@@ -7,12 +7,14 @@ let currentProfile = null;
 let feedbackList = [];
 let selectedFeedback = null;
 
-const searchFeedbackInput = document.getElementById("searchFeedbackInput");
+const searchInput = document.getElementById("searchInput");
+const typeFilter = document.getElementById("typeFilter");
 const statusFilter = document.getElementById("statusFilter");
-const feedbackTableBody = document.getElementById("feedbackTableBody");
+const feedbackTable = document.getElementById("feedbackTable");
 const feedbackModal = document.getElementById("feedbackModal");
-const feedbackResponseInput = document.getElementById("feedbackResponseInput");
-const feedbackStatusSelect = document.getElementById("feedbackStatusSelect");
+const adminResponse = document.getElementById("adminResponse");
+const feedbackStatus = document.getElementById("feedbackStatus");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("admin", function (profile, user) {
@@ -29,7 +31,9 @@ async function initializePage() {
 
 async function loadFeedback() {
     try {
-        feedbackTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback inquiries...</td></tr>`;
+        if (feedbackTable) {
+            feedbackTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback inquiries...</td></tr>`;
+        }
 
         feedbackList = await window.refmansyApi.feedback.getAllFeedback();
 
@@ -37,7 +41,9 @@ async function loadFeedback() {
         filterFeedback();
     } catch (err) {
         console.error("Error loading feedback list:", err);
-        feedbackTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        if (feedbackTable) {
+            feedbackTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        }
     }
 }
 
@@ -61,13 +67,14 @@ function updateSummary() {
 }
 
 function setupFilters() {
-    searchFeedbackInput.addEventListener("input", filterFeedback);
-    statusFilter.addEventListener("change", filterFeedback);
+    if (searchInput) searchInput.addEventListener("input", filterFeedback);
+    if (typeFilter) typeFilter.addEventListener("change", filterFeedback);
+    if (statusFilter) statusFilter.addEventListener("change", filterFeedback);
 }
 
 function filterFeedback() {
-    const term = searchFeedbackInput.value.trim().toLowerCase();
-    const stat = statusFilter.value.toLowerCase();
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const stat = (statusFilter?.value || "all").toLowerCase();
 
     const filtered = feedbackList.filter(fb => {
         const matchesTerm =
@@ -82,20 +89,24 @@ function filterFeedback() {
         return matchesTerm && matchesStat;
     });
 
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${feedbackList.length} feedback messages`;
+    }
+
     renderTable(filtered);
 }
 
 function renderTable(list) {
-    feedbackTableBody.innerHTML = "";
+    if (!feedbackTable) return;
+    feedbackTable.innerHTML = "";
 
     if (!list || list.length === 0) {
-        feedbackTableBody.innerHTML = `<tr><td colspan="6" class="empty-table">No feedback messages found.</td></tr>`;
+        feedbackTable.innerHTML = `<tr><td colspan="6" class="empty-table">No feedback messages found.</td></tr>`;
         return;
     }
 
-    list.forEach((fb, index) => {
+    list.forEach(fb => {
         const row = document.createElement("tr");
-        const displayId = "FB-" + String(index + 1).padStart(4, "0");
         const dateStr = fb.created_at ? new Date(fb.created_at).toLocaleDateString() : "N/A";
 
         const statusBadge =
@@ -106,11 +117,11 @@ function renderTable(list) {
                 : `<span class="badge-new"><i class="fa-solid fa-bell"></i> New</span>`;
 
         row.innerHTML = `
-            <td><strong>${displayId}</strong></td>
             <td>
                 <strong>${escapeHtml(fb.user_name || "Faculty")}</strong>
                 <br><small style="color: #64748b;">${escapeHtml(fb.user_email || "")}</small>
             </td>
+            <td>General Inquiry</td>
             <td>${escapeHtml(fb.subject)}</td>
             <td>${dateStr}</td>
             <td>${statusBadge}</td>
@@ -122,52 +133,66 @@ function renderTable(list) {
         `;
 
         row.querySelector(".view-btn").addEventListener("click", () => openModal(fb));
-        feedbackTableBody.appendChild(row);
+        feedbackTable.appendChild(row);
     });
 }
 
 function setupModal() {
-    document.getElementById("closeModalButton").addEventListener("click", closeModal);
-    document.getElementById("cancelButton").addEventListener("click", closeModal);
+    const closeBtn = document.getElementById("closeModalButton");
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-    feedbackModal.addEventListener("click", function (e) {
-        if (e.target === feedbackModal) closeModal();
-    });
+    const cancelBtn = document.getElementById("cancelButton");
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
 
-    document.getElementById("saveResponseButton").addEventListener("click", saveResponse);
+    if (feedbackModal) {
+        feedbackModal.addEventListener("click", function (e) {
+            if (e.target === feedbackModal) closeModal();
+        });
+    }
+
+    const saveBtn = document.getElementById("saveResponseButton");
+    if (saveBtn) saveBtn.addEventListener("click", saveResponse);
 }
 
 function openModal(fb) {
     selectedFeedback = fb;
 
-    document.getElementById("modalFeedbackId").textContent = fb.id;
-    document.getElementById("modalUserName").textContent = `${fb.user_name || "Faculty"} (${fb.user_email || ""})`;
-    document.getElementById("modalDate").textContent = fb.created_at ? new Date(fb.created_at).toLocaleString() : "N/A";
-    document.getElementById("modalRating").textContent = fb.rating ? `${fb.rating} / 5 Stars` : "Not provided";
-    document.getElementById("modalSubject").textContent = fb.subject;
-    document.getElementById("modalMessage").textContent = fb.message;
+    const mId = document.getElementById("modalFeedbackId");
+    if (mId) mId.textContent = fb.id;
+    const mDate = document.getElementById("modalDate");
+    if (mDate) mDate.textContent = fb.created_at ? new Date(fb.created_at).toLocaleString() : "N/A";
+    const mUser = document.getElementById("modalUser");
+    if (mUser) mUser.textContent = `${fb.user_name || "Faculty"} (${fb.user_email || ""})`;
+    const mType = document.getElementById("modalType");
+    if (mType) mType.textContent = "General Inquiry";
+    const mSubj = document.getElementById("modalSubject");
+    if (mSubj) mSubj.textContent = fb.subject;
+    const mMsg = document.getElementById("modalMessage");
+    if (mMsg) mMsg.textContent = fb.message;
 
-    feedbackResponseInput.value = fb.admin_reply || "";
-    feedbackStatusSelect.value = fb.status || "new";
+    if (adminResponse) adminResponse.value = fb.admin_reply || "";
+    if (feedbackStatus) feedbackStatus.value = fb.status || "new";
 
-    feedbackModal.classList.add("active");
+    if (feedbackModal) feedbackModal.classList.add("active");
 }
 
 function closeModal() {
-    feedbackModal.classList.remove("active");
+    if (feedbackModal) feedbackModal.classList.remove("active");
     selectedFeedback = null;
 }
 
 async function saveResponse() {
     if (!selectedFeedback) return;
 
-    const reply = feedbackResponseInput.value.trim();
-    const status = feedbackStatusSelect.value;
+    const reply = (adminResponse?.value || "").trim();
+    const status = feedbackStatus?.value || "resolved";
     const saveBtn = document.getElementById("saveResponseButton");
 
     try {
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+        }
 
         await window.refmansyApi.feedback.replyFeedback(selectedFeedback.id, reply, status);
 
@@ -177,8 +202,10 @@ async function saveResponse() {
         console.error("Save reply error:", err);
         alert("Failed to save response: " + err.message);
     } finally {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Save Response`;
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Save Response`;
+        }
     }
 }
 

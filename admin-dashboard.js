@@ -5,9 +5,6 @@
 let currentUser = null;
 let currentProfile = null;
 let allFiles = [];
-let allUsers = [];
-let allCategories = [];
-let allDownloads = [];
 
 const recentFilesTable = document.getElementById("recentFilesTable");
 
@@ -20,19 +17,12 @@ window.refmansyAuthGuard.init("admin", function (profile, user) {
 
 async function initializeDashboard() {
     try {
-        recentFilesTable.innerHTML = `<tr><td colspan="6" class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Loading system statistics...</td></tr>`;
+        if (recentFilesTable) {
+            recentFilesTable.innerHTML = `<tr><td colspan="6" class="empty-message"><i class="fa-solid fa-spinner fa-spin"></i> Loading system statistics...</td></tr>`;
+        }
 
-        const [files, users, categories, downloads] = await Promise.all([
-            window.refmansyApi.research.getAllFiles(),
-            window.refmansyApi.users.getAll(),
-            window.refmansyApi.categories.getAll(),
-            window.refmansyApi.downloads.getAllDownloads()
-        ]);
-
+        const files = await window.refmansyApi.research.getAllFiles();
         allFiles = files;
-        allUsers = users;
-        allCategories = categories;
-        allDownloads = downloads;
 
         updateDashboardMetrics();
         renderRecentFiles();
@@ -47,29 +37,33 @@ function updateDashboardMetrics() {
     const approved = allFiles.filter(f => f.status === "approved").length;
     const rejected = allFiles.filter(f => f.status === "rejected").length;
 
-    const totalUsersEl = document.getElementById("totalUsers");
-    if (totalUsersEl) totalUsersEl.textContent = allUsers.length;
+    const totalUploadedEl = document.getElementById("totalUploaded");
+    if (totalUploadedEl) totalUploadedEl.textContent = totalFiles;
 
-    const totalCategoriesEl = document.getElementById("totalCategories");
-    if (totalCategoriesEl) totalCategoriesEl.textContent = allCategories.length;
+    const totalPendingEl = document.getElementById("totalPending");
+    if (totalPendingEl) totalPendingEl.textContent = pending;
 
-    const totalResearchFilesEl = document.getElementById("totalResearchFiles");
-    if (totalResearchFilesEl) totalResearchFilesEl.textContent = totalFiles;
+    const totalApprovedEl = document.getElementById("totalApproved");
+    if (totalApprovedEl) totalApprovedEl.textContent = approved;
 
-    const pendingFilesEl = document.getElementById("pendingFiles");
-    if (pendingFilesEl) pendingFilesEl.textContent = pending;
+    const totalRejectedEl = document.getElementById("totalRejected");
+    if (totalRejectedEl) totalRejectedEl.textContent = rejected;
 
-    const approvedFilesEl = document.getElementById("approvedFiles");
-    if (approvedFilesEl) approvedFilesEl.textContent = approved;
+    const chartTotalEl = document.getElementById("chartTotal");
+    if (chartTotalEl) chartTotalEl.textContent = totalFiles;
 
-    const rejectedFilesEl = document.getElementById("rejectedFiles");
-    if (rejectedFilesEl) rejectedFilesEl.textContent = rejected;
+    const legAppr = document.getElementById("legendApproved");
+    if (legAppr) legAppr.textContent = approved;
 
-    const totalDownloadsEl = document.getElementById("totalDownloads");
-    if (totalDownloadsEl) totalDownloadsEl.textContent = allDownloads.length;
+    const legPend = document.getElementById("legendPending");
+    if (legPend) legPend.textContent = pending;
+
+    const legRej = document.getElementById("legendRejected");
+    if (legRej) legRej.textContent = rejected;
 }
 
 function renderRecentFiles() {
+    if (!recentFilesTable) return;
     recentFilesTable.innerHTML = "";
 
     const recent = allFiles.slice(0, 5);
@@ -79,7 +73,7 @@ function renderRecentFiles() {
         return;
     }
 
-    recent.forEach((file, index) => {
+    recent.forEach(file => {
         const row = document.createElement("tr");
 
         const statusBadge =

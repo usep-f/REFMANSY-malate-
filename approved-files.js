@@ -9,8 +9,9 @@ let selectedFile = null;
 
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
-const approvedTableBody = document.getElementById("approvedTableBody");
-const fileModal = document.getElementById("fileModal");
+const approvedFilesTable = document.getElementById("approvedFilesTable");
+const detailsModal = document.getElementById("detailsModal");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("admin", function (profile, user) {
@@ -27,7 +28,9 @@ async function initializePage() {
 
 async function loadApprovedFiles() {
     try {
-        approvedTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading approved files...</td></tr>`;
+        if (approvedFilesTable) {
+            approvedFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading approved files...</td></tr>`;
+        }
 
         const [allFiles, categories] = await Promise.all([
             window.refmansyApi.research.getApprovedFiles(),
@@ -41,16 +44,19 @@ async function loadApprovedFiles() {
         filterApprovedFiles();
     } catch (err) {
         console.error("Error loading approved files:", err);
-        approvedTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        if (approvedFilesTable) {
+            approvedFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        }
     }
 }
 
 function updateSummary() {
-    const countEl = document.getElementById("approvedSummaryCount");
+    const countEl = document.getElementById("totalApprovedFiles");
     if (countEl) countEl.textContent = approvedFiles.length;
 }
 
 function populateCategoryFilter(categories) {
+    if (!categoryFilter) return;
     categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
     categories.forEach(cat => {
         const opt = document.createElement("option");
@@ -61,13 +67,13 @@ function populateCategoryFilter(categories) {
 }
 
 function setupFilters() {
-    searchInput.addEventListener("input", filterApprovedFiles);
-    categoryFilter.addEventListener("change", filterApprovedFiles);
+    if (searchInput) searchInput.addEventListener("input", filterApprovedFiles);
+    if (categoryFilter) categoryFilter.addEventListener("change", filterApprovedFiles);
 }
 
 function filterApprovedFiles() {
-    const term = searchInput.value.trim().toLowerCase();
-    const cat = categoryFilter.value;
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const cat = categoryFilter?.value || "all";
 
     const filtered = approvedFiles.filter(file => {
         const matchesTerm =
@@ -81,23 +87,26 @@ function filterApprovedFiles() {
         return matchesTerm && matchesCat;
     });
 
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${approvedFiles.length} approved files`;
+    }
+
     renderTable(filtered);
 }
 
 function renderTable(files) {
-    approvedTableBody.innerHTML = "";
+    if (!approvedFilesTable) return;
+    approvedFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        approvedTableBody.innerHTML = `<tr><td colspan="6" class="empty-table">No approved research files found.</td></tr>`;
+        approvedFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table">No approved research files found.</td></tr>`;
         return;
     }
 
-    files.forEach((file, index) => {
+    files.forEach(file => {
         const row = document.createElement("tr");
-        const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
         row.innerHTML = `
-            <td><strong>${displayId}</strong></td>
             <td>
                 <div class="file-title-cell">
                     <strong>${escapeHtml(file.title)}</strong>
@@ -107,6 +116,7 @@ function renderTable(files) {
             <td>${escapeHtml(file.researcher)}</td>
             <td>${escapeHtml(file.category)}</td>
             <td>${file.dateUploaded || "N/A"}</td>
+            <td><span class="status-badge status-approved"><i class="fa-solid fa-circle-check"></i> Approved</span></td>
             <td>
                 <div class="table-actions">
                     <button type="button" class="btn-action view-btn" title="View Details">
@@ -132,45 +142,63 @@ function renderTable(files) {
             });
         }
 
-        approvedTableBody.appendChild(row);
+        approvedFilesTable.appendChild(row);
     });
 }
 
 function setupModal() {
-    document.getElementById("closeModalButton").addEventListener("click", closeModal);
-    fileModal.addEventListener("click", function (e) {
-        if (e.target === fileModal) closeModal();
-    });
+    const closeBtn = document.getElementById("closeModalButton");
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-    document.getElementById("viewFileButton").addEventListener("click", async function () {
-        if (selectedFile && selectedFile.filePath) {
-            await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
-        } else {
-            alert("No document file is attached.");
-        }
-    });
+    if (detailsModal) {
+        detailsModal.addEventListener("click", function (e) {
+            if (e.target === detailsModal) closeModal();
+        });
+    }
 
-    document.getElementById("markPendingButton").addEventListener("click", () => changeStatus("pending"));
-    document.getElementById("rejectButton").addEventListener("click", () => changeStatus("rejected"));
+    const viewBtn = document.getElementById("viewFileButton");
+    if (viewBtn) {
+        viewBtn.addEventListener("click", async function () {
+            if (selectedFile && selectedFile.filePath) {
+                await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
+            } else {
+                alert("No document file is attached.");
+            }
+        });
+    }
+
+    const pendBtn = document.getElementById("markPendingButton");
+    if (pendBtn) pendBtn.addEventListener("click", () => changeStatus("pending"));
+
+    const rejBtn = document.getElementById("rejectButton");
+    if (rejBtn) rejBtn.addEventListener("click", () => changeStatus("rejected"));
 }
 
 function openModal(file) {
     selectedFile = file;
 
-    document.getElementById("modalFileId").textContent = file.id;
-    document.getElementById("modalTitle").textContent = file.title;
-    document.getElementById("modalResearcher").textContent = file.researcher;
-    document.getElementById("modalCategory").textContent = file.category;
-    document.getElementById("modalUploadedBy").textContent = `${file.uploadedBy} (${file.uploadedByEmail || ""})`;
-    document.getElementById("modalDate").textContent = file.dateUploaded || "N/A";
-    document.getElementById("modalDescription").textContent = file.description || "No description provided.";
-    document.getElementById("modalComment").textContent = file.reviewComment || "No review comment.";
+    const mFileId = document.getElementById("modalFileId");
+    if (mFileId) mFileId.textContent = file.id;
+    const mAppDate = document.getElementById("modalApprovedDate");
+    if (mAppDate) mAppDate.textContent = file.reviewedDate || file.dateUploaded || "N/A";
+    const mTitle = document.getElementById("modalTitle");
+    if (mTitle) mTitle.textContent = file.title;
+    const mRes = document.getElementById("modalResearcher");
+    if (mRes) mRes.textContent = file.researcher;
+    const mCat = document.getElementById("modalCategory");
+    if (mCat) mCat.textContent = file.category;
+    const mRevBy = document.getElementById("modalReviewedBy");
+    if (mRevBy) mRevBy.textContent = "Administrator";
+    const mDesc = document.getElementById("modalDescription");
+    if (mDesc) mDesc.textContent = file.description || "No description provided.";
+    const mComment = document.getElementById("modalComment");
+    if (mComment) mComment.textContent = file.reviewComment || "No review comment.";
 
-    fileModal.classList.add("active");
+    if (detailsModal) detailsModal.classList.add("active");
 }
 
 function closeModal() {
-    fileModal.classList.remove("active");
+    if (detailsModal) detailsModal.classList.remove("active");
     selectedFile = null;
 }
 

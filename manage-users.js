@@ -7,14 +7,15 @@ let currentProfile = null;
 let usersList = [];
 let editingUserId = null;
 
-const searchInput = document.getElementById("searchUserInput");
+const searchInput = document.getElementById("searchInput");
 const roleFilter = document.getElementById("roleFilter");
 const statusFilter = document.getElementById("statusFilter");
-const usersTableBody = document.getElementById("usersTableBody");
+const usersTable = document.getElementById("usersTable");
 const userModal = document.getElementById("userModal");
 const userForm = document.getElementById("userForm");
 const modalTitle = document.getElementById("modalTitle");
 const formMessage = document.getElementById("formMessage");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("admin", function (profile, user) {
@@ -32,7 +33,9 @@ async function initializePage() {
 
 async function loadUsers() {
     try {
-        usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading user accounts...</td></tr>`;
+        if (usersTable) {
+            usersTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading user accounts...</td></tr>`;
+        }
 
         usersList = await window.refmansyApi.users.getAll();
 
@@ -40,7 +43,9 @@ async function loadUsers() {
         filterUsers();
     } catch (err) {
         console.error("Error loading users:", err);
-        usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        if (usersTable) {
+            usersTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        }
     }
 }
 
@@ -49,7 +54,6 @@ function updateSummary() {
     const adminCount = usersList.filter(u => u.role === "admin").length;
     const facultyCount = usersList.filter(u => u.role === "faculty").length;
     const activeCount = usersList.filter(u => u.status === "active").length;
-    const inactiveCount = usersList.filter(u => u.status === "inactive").length;
 
     const totalEl = document.getElementById("totalUsers");
     if (totalEl) totalEl.textContent = total;
@@ -57,26 +61,23 @@ function updateSummary() {
     const adminEl = document.getElementById("totalAdmins");
     if (adminEl) adminEl.textContent = adminCount;
 
-    const facultyEl = document.getElementById("totalFaculty");
+    const facultyEl = document.getElementById("totalRegularUsers");
     if (facultyEl) facultyEl.textContent = facultyCount;
 
     const activeEl = document.getElementById("activeUsers");
     if (activeEl) activeEl.textContent = activeCount;
-
-    const inactiveEl = document.getElementById("inactiveUsers");
-    if (inactiveEl) inactiveEl.textContent = inactiveCount;
 }
 
 function setupFilters() {
-    searchInput.addEventListener("input", filterUsers);
-    roleFilter.addEventListener("change", filterUsers);
-    statusFilter.addEventListener("change", filterUsers);
+    if (searchInput) searchInput.addEventListener("input", filterUsers);
+    if (roleFilter) roleFilter.addEventListener("change", filterUsers);
+    if (statusFilter) statusFilter.addEventListener("change", filterUsers);
 }
 
 function filterUsers() {
-    const term = searchInput.value.trim().toLowerCase();
-    const role = roleFilter.value.toLowerCase();
-    const stat = statusFilter.value.toLowerCase();
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const role = (roleFilter?.value || "all").toLowerCase();
+    const stat = (statusFilter?.value || "all").toLowerCase();
 
     const filtered = usersList.filter(user => {
         const matchesTerm =
@@ -91,14 +92,19 @@ function filterUsers() {
         return matchesTerm && matchesRole && matchesStatus;
     });
 
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${usersList.length} users`;
+    }
+
     renderUsersTable(filtered);
 }
 
 function renderUsersTable(list) {
-    usersTableBody.innerHTML = "";
+    if (!usersTable) return;
+    usersTable.innerHTML = "";
 
     if (!list || list.length === 0) {
-        usersTableBody.innerHTML = `<tr><td colspan="7" class="empty-table">No user accounts found matching criteria.</td></tr>`;
+        usersTable.innerHTML = `<tr><td colspan="7" class="empty-table">No user accounts found matching criteria.</td></tr>`;
         return;
     }
 
@@ -154,7 +160,7 @@ function renderUsersTable(list) {
             toggleBtn.addEventListener("click", () => toggleUserStatus(user));
         }
 
-        usersTableBody.appendChild(row);
+        usersTable.appendChild(row);
     });
 }
 
@@ -181,58 +187,73 @@ function setupModal() {
     const addBtn = document.getElementById("addUserButton");
     if (addBtn) addBtn.addEventListener("click", openAddModal);
 
-    document.getElementById("closeModalButton").addEventListener("click", closeModal);
-    document.getElementById("cancelButton").addEventListener("click", closeModal);
+    const closeBtn = document.getElementById("closeModalButton");
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-    userModal.addEventListener("click", function (e) {
-        if (e.target === userModal) closeModal();
-    });
+    const cancelBtn = document.getElementById("cancelButton");
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+    if (userModal) {
+        userModal.addEventListener("click", function (e) {
+            if (e.target === userModal) closeModal();
+        });
+    }
 }
 
 function openAddModal() {
     editingUserId = null;
-    modalTitle.textContent = "Add New User";
-    userForm.reset();
-    document.getElementById("passwordGroup").style.display = "block";
-    document.getElementById("password").required = true;
+    if (modalTitle) modalTitle.textContent = "Add New User";
+    if (userForm) userForm.reset();
+
+    const pwInput = document.getElementById("password");
+    if (pwInput) pwInput.required = true;
+    const confirmPwInput = document.getElementById("confirmPassword");
+    if (confirmPwInput) confirmPwInput.required = true;
+
     clearFormMessage();
-    userModal.classList.add("active");
+    if (userModal) userModal.classList.add("active");
 }
 
 function openEditModal(user) {
     editingUserId = user.id;
-    modalTitle.textContent = "Edit User Account";
+    if (modalTitle) modalTitle.textContent = "Edit User Account";
 
-    document.getElementById("fullname").value = user.fullname || "";
-    document.getElementById("username").value = user.username || "";
-    document.getElementById("email").value = user.email || "";
-    document.getElementById("role").value = user.role || "faculty";
-    document.getElementById("status").value = user.status || "active";
+    const fn = document.getElementById("fullname");
+    if (fn) fn.value = user.fullname || "";
+    const un = document.getElementById("username");
+    if (un) un.value = user.username || "";
+    const em = document.getElementById("email");
+    if (em) em.value = user.email || "";
+    const rl = document.getElementById("role");
+    if (rl) rl.value = user.role || "faculty";
+    const st = document.getElementById("accountStatus");
+    if (st) st.value = user.status || "active";
 
-    // Disable password input when editing
-    const pwGroup = document.getElementById("passwordGroup");
-    if (pwGroup) pwGroup.style.display = "none";
     const pwInput = document.getElementById("password");
     if (pwInput) pwInput.required = false;
+    const confirmPwInput = document.getElementById("confirmPassword");
+    if (confirmPwInput) confirmPwInput.required = false;
 
     clearFormMessage();
-    userModal.classList.add("active");
+    if (userModal) userModal.classList.add("active");
 }
 
 function closeModal() {
-    userModal.classList.remove("active");
+    if (userModal) userModal.classList.remove("active");
     editingUserId = null;
 }
 
 function setupForm() {
+    if (!userForm) return;
+
     userForm.addEventListener("submit", async function (e) {
         e.preventDefault();
 
-        const fullname = document.getElementById("fullname").value.trim();
-        const username = document.getElementById("username").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const role = document.getElementById("role").value;
-        const status = document.getElementById("status").value;
+        const fullname = (document.getElementById("fullname")?.value || "").trim();
+        const username = (document.getElementById("username")?.value || "").trim();
+        const email = (document.getElementById("email")?.value || "").trim();
+        const role = document.getElementById("role")?.value || "faculty";
+        const status = document.getElementById("accountStatus")?.value || "active";
         const saveBtn = userForm.querySelector("button[type='submit']");
 
         if (!fullname || !username || !email || !role) {
@@ -241,8 +262,10 @@ function setupForm() {
         }
 
         try {
-            saveBtn.disabled = true;
-            saveBtn.textContent = "Saving...";
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = "Saving...";
+            }
 
             if (editingUserId) {
                 await window.refmansyApi.users.updateProfile(editingUserId, {
@@ -252,11 +275,13 @@ function setupForm() {
                     status
                 });
             } else {
-                const password = document.getElementById("password").value;
+                const password = document.getElementById("password")?.value || "";
                 if (!password || password.length < 6) {
                     showFormMessage("Password must be at least 6 characters.", "error");
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = "Save User";
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = "Save User";
+                    }
                     return;
                 }
 
@@ -273,18 +298,22 @@ function setupForm() {
             console.error("Save user error:", err);
             showFormMessage(err.message || "Failed to save user.", "error");
         } finally {
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Save User";
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Save User";
+            }
         }
     });
 }
 
 function showFormMessage(text, type) {
+    if (!formMessage) return;
     formMessage.textContent = text;
     formMessage.className = "form-message " + type;
 }
 
 function clearFormMessage() {
+    if (!formMessage) return;
     formMessage.textContent = "";
     formMessage.className = "form-message";
 }

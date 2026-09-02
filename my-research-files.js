@@ -10,9 +10,9 @@ let selectedFile = null;
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
 const statusFilter = document.getElementById("statusFilter");
-const researchTableBody = document.getElementById("researchTableBody");
-const emptyState = document.getElementById("emptyState");
+const researchFilesTable = document.getElementById("researchFilesTable");
 const fileModal = document.getElementById("fileModal");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("faculty", function (profile, user) {
@@ -29,16 +29,20 @@ async function initializePage() {
 
 async function loadFacultyFiles() {
     try {
-        researchTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading research files...</td></tr>`;
-        
+        if (researchFilesTable) {
+            researchFilesTable.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading research files...</td></tr>`;
+        }
+
         facultyFiles = await window.refmansyApi.research.getMyFiles(currentProfile.id);
-        
+
         updateSummary();
         await loadCategoryOptions();
         filterResearchFiles();
     } catch (err) {
         console.error("Error loading faculty files:", err);
-        researchTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: red; padding: 2rem;">Error loading files: ${err.message}</td></tr>`;
+        if (researchFilesTable) {
+            researchFilesTable.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red; padding: 2rem;">Error loading files: ${err.message}</td></tr>`;
+        }
     }
 }
 
@@ -48,18 +52,23 @@ function updateSummary() {
     const pending = facultyFiles.filter(f => f.status === "pending").length;
     const rejected = facultyFiles.filter(f => f.status === "rejected").length;
 
-    document.getElementById("totalCount").textContent = total;
-    document.getElementById("approvedCount").textContent = approved;
-    document.getElementById("pendingCount").textContent = pending;
-    document.getElementById("rejectedCount").textContent = rejected;
+    const totalEl = document.getElementById("totalFiles");
+    if (totalEl) totalEl.textContent = total;
+    const approvedEl = document.getElementById("approvedFiles");
+    if (approvedEl) approvedEl.textContent = approved;
+    const pendingEl = document.getElementById("pendingFiles");
+    if (pendingEl) pendingEl.textContent = pending;
+    const rejectedEl = document.getElementById("rejectedFiles");
+    if (rejectedEl) rejectedEl.textContent = rejected;
 }
 
 async function loadCategoryOptions() {
+    if (!categoryFilter) return;
     try {
         const categories = await window.refmansyApi.categories.getAll();
         const existingVal = categoryFilter.value;
         categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
-        
+
         categories.forEach(cat => {
             const opt = document.createElement("option");
             opt.value = cat.name;
@@ -73,15 +82,15 @@ async function loadCategoryOptions() {
 }
 
 function setupFilters() {
-    searchInput.addEventListener("input", filterResearchFiles);
-    categoryFilter.addEventListener("change", filterResearchFiles);
-    statusFilter.addEventListener("change", filterResearchFiles);
+    if (searchInput) searchInput.addEventListener("input", filterResearchFiles);
+    if (categoryFilter) categoryFilter.addEventListener("change", filterResearchFiles);
+    if (statusFilter) statusFilter.addEventListener("change", filterResearchFiles);
 }
 
 function filterResearchFiles() {
-    const term = searchInput.value.trim().toLowerCase();
-    const cat = categoryFilter.value;
-    const stat = statusFilter.value.toLowerCase();
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const cat = categoryFilter?.value || "all";
+    const stat = (statusFilter?.value || "all").toLowerCase();
 
     const filtered = facultyFiles.filter(file => {
         const matchesTerm =
@@ -96,27 +105,27 @@ function filterResearchFiles() {
         return matchesTerm && matchesCat && matchesStat;
     });
 
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${facultyFiles.length} files`;
+    }
+
     renderTable(filtered);
 }
 
 function renderTable(files) {
-    researchTableBody.innerHTML = "";
+    if (!researchFilesTable) return;
+    researchFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        emptyState.style.display = "block";
+        researchFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table">No research files found matching selected criteria.</td></tr>`;
         return;
     }
 
-    emptyState.style.display = "none";
-
     files.forEach((file, index) => {
         const row = document.createElement("tr");
-
         const statusBadge = getStatusBadge(file.status);
-        const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
         row.innerHTML = `
-            <td><strong>${displayId}</strong></td>
             <td>
                 <div class="file-title-cell">
                     <strong>${escapeHtml(file.title)}</strong>
@@ -124,17 +133,17 @@ function renderTable(files) {
                 </div>
             </td>
             <td>${escapeHtml(file.category)}</td>
-            <td>${escapeHtml(file.publicationYear)}</td>
             <td>${file.dateUploaded || "N/A"}</td>
             <td>${statusBadge}</td>
+            <td>${file.reviewComment ? escapeHtml(file.reviewComment) : "<em>No comment</em>"}</td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="action-btn view-btn" title="View Details">
-                        <i class="fa-regular fa-eye"></i>
+                    <button type="button" class="btn-action view-btn" title="View Details">
+                        <i class="fa-regular fa-eye"></i> View
                     </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="action-btn download-btn" title="Download File">
+                            ? `<button type="button" class="btn-action download-btn" title="Download File">
                                 <i class="fa-solid fa-download"></i>
                                </button>`
                             : ""
@@ -144,7 +153,7 @@ function renderTable(files) {
         `;
 
         row.querySelector(".view-btn").addEventListener("click", () => openModal(file));
-        
+
         const dlBtn = row.querySelector(".download-btn");
         if (dlBtn) {
             dlBtn.addEventListener("click", async () => {
@@ -152,7 +161,7 @@ function renderTable(files) {
             });
         }
 
-        researchTableBody.appendChild(row);
+        researchFilesTable.appendChild(row);
     });
 }
 
@@ -167,50 +176,69 @@ function getStatusBadge(status) {
 }
 
 function setupModal() {
-    document.getElementById("closeModalButton").addEventListener("click", closeModal);
-    fileModal.addEventListener("click", function (e) {
-        if (e.target === fileModal) closeModal();
-    });
+    const closeBtn = document.getElementById("closeModalButton");
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-    document.getElementById("editFileButton").addEventListener("click", function () {
-        if (selectedFile) {
-            localStorage.setItem("refmansyEditFileId", selectedFile.id);
-            window.location.href = "upload-research.html";
-        }
-    });
+    if (fileModal) {
+        fileModal.addEventListener("click", function (e) {
+            if (e.target === fileModal) closeModal();
+        });
+    }
 
-    document.getElementById("viewFileButton").addEventListener("click", async function () {
-        if (selectedFile && selectedFile.filePath) {
-            await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
-        } else {
-            alert("No file attached to this research submission.");
-        }
-    });
+    const editBtn = document.getElementById("editFileButton");
+    if (editBtn) {
+        editBtn.addEventListener("click", function () {
+            if (selectedFile) {
+                localStorage.setItem("refmansyEditFileId", selectedFile.id);
+                window.location.href = "upload-research.html";
+            }
+        });
+    }
+
+    const viewBtn = document.getElementById("viewFileButton");
+    if (viewBtn) {
+        viewBtn.addEventListener("click", async function () {
+            if (selectedFile && selectedFile.filePath) {
+                await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
+            } else {
+                alert("No file attached to this research submission.");
+            }
+        });
+    }
 }
 
 function openModal(file) {
     selectedFile = file;
 
-    document.getElementById("modalFileId").textContent = file.id;
-    document.getElementById("modalDate").textContent = file.dateUploaded || "N/A";
-    document.getElementById("modalTitle").textContent = file.title;
-    document.getElementById("modalCategory").textContent = file.category;
-    document.getElementById("modalStatus").innerHTML = getStatusBadge(file.status);
-    document.getElementById("modalDescription").textContent = file.description || "No description provided.";
-    document.getElementById("modalComment").textContent = file.reviewComment || "No administrator review comment yet.";
+    const modalFileId = document.getElementById("modalFileId");
+    if (modalFileId) modalFileId.textContent = file.id;
+    const modalDate = document.getElementById("modalDate");
+    if (modalDate) modalDate.textContent = file.dateUploaded || "N/A";
+    const modalTitle = document.getElementById("modalTitle");
+    if (modalTitle) modalTitle.textContent = file.title;
+    const modalCategory = document.getElementById("modalCategory");
+    if (modalCategory) modalCategory.textContent = file.category;
+    const modalStatus = document.getElementById("modalStatus");
+    if (modalStatus) modalStatus.innerHTML = getStatusBadge(file.status);
+    const modalDescription = document.getElementById("modalDescription");
+    if (modalDescription) modalDescription.textContent = file.description || "No description provided.";
+    const modalComment = document.getElementById("modalComment");
+    if (modalComment) modalComment.textContent = file.reviewComment || "No administrator review comment yet.";
 
     const editBtn = document.getElementById("editFileButton");
-    if (file.status === "pending" || file.status === "rejected") {
-        editBtn.style.display = "inline-flex";
-    } else {
-        editBtn.style.display = "none";
+    if (editBtn) {
+        if (file.status === "pending" || file.status === "rejected") {
+            editBtn.style.display = "inline-flex";
+        } else {
+            editBtn.style.display = "none";
+        }
     }
 
-    fileModal.classList.add("active");
+    if (fileModal) fileModal.classList.add("active");
 }
 
 function closeModal() {
-    fileModal.classList.remove("active");
+    if (fileModal) fileModal.classList.remove("active");
     selectedFile = null;
 }
 

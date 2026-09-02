@@ -9,8 +9,9 @@ let selectedFile = null;
 
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
-const pendingTableBody = document.getElementById("pendingTableBody");
+const pendingFilesTable = document.getElementById("pendingFilesTable");
 const reviewModal = document.getElementById("reviewModal");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("admin", function (profile, user) {
@@ -27,7 +28,9 @@ async function initializePage() {
 
 async function loadPendingFiles() {
     try {
-        pendingTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending submissions...</td></tr>`;
+        if (pendingFilesTable) {
+            pendingFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending submissions...</td></tr>`;
+        }
 
         const [allFiles, categories] = await Promise.all([
             window.refmansyApi.research.getAllFiles(),
@@ -41,19 +44,19 @@ async function loadPendingFiles() {
         filterPendingFiles();
     } catch (err) {
         console.error("Error loading pending files:", err);
-        pendingTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        if (pendingFilesTable) {
+            pendingFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        }
     }
 }
 
 function updateSummary() {
-    const totalEl = document.getElementById("totalPendingCount");
+    const totalEl = document.getElementById("totalPendingFiles");
     if (totalEl) totalEl.textContent = pendingFiles.length;
-
-    const summaryCountEl = document.getElementById("pendingSummaryCount");
-    if (summaryCountEl) summaryCountEl.textContent = pendingFiles.length;
 }
 
 function populateCategoryFilter(categories) {
+    if (!categoryFilter) return;
     categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
     categories.forEach(cat => {
         const opt = document.createElement("option");
@@ -64,13 +67,13 @@ function populateCategoryFilter(categories) {
 }
 
 function setupFilters() {
-    searchInput.addEventListener("input", filterPendingFiles);
-    categoryFilter.addEventListener("change", filterPendingFiles);
+    if (searchInput) searchInput.addEventListener("input", filterPendingFiles);
+    if (categoryFilter) categoryFilter.addEventListener("change", filterPendingFiles);
 }
 
 function filterPendingFiles() {
-    const term = searchInput.value.trim().toLowerCase();
-    const cat = categoryFilter.value;
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const cat = categoryFilter?.value || "all";
 
     const filtered = pendingFiles.filter(file => {
         const matchesTerm =
@@ -84,23 +87,26 @@ function filterPendingFiles() {
         return matchesTerm && matchesCat;
     });
 
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${pendingFiles.length} pending files`;
+    }
+
     renderTable(filtered);
 }
 
 function renderTable(files) {
-    pendingTableBody.innerHTML = "";
+    if (!pendingFilesTable) return;
+    pendingFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        pendingTableBody.innerHTML = `<tr><td colspan="6" class="empty-table">No pending research files to review.</td></tr>`;
+        pendingFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table">No pending research files to review.</td></tr>`;
         return;
     }
 
     files.forEach((file, index) => {
         const row = document.createElement("tr");
-        const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
         row.innerHTML = `
-            <td><strong>${displayId}</strong></td>
             <td>
                 <div class="file-title-cell">
                     <strong>${escapeHtml(file.title)}</strong>
@@ -110,62 +116,66 @@ function renderTable(files) {
             <td>${escapeHtml(file.researcher)}</td>
             <td>${escapeHtml(file.category)}</td>
             <td>${file.dateUploaded || "N/A"}</td>
+            <td><span class="status-badge status-pending">Pending Review</span></td>
             <td>
                 <button type="button" class="btn-review review-btn">
-                    <i class="fa-solid fa-magnifying-glass"></i> Review File
+                    <i class="fa-solid fa-magnifying-glass"></i> Review
                 </button>
             </td>
         `;
 
         row.querySelector(".review-btn").addEventListener("click", () => openModal(file));
-        pendingTableBody.appendChild(row);
+        pendingFilesTable.appendChild(row);
     });
 }
 
 function setupModal() {
-    document.getElementById("closeModalButton").addEventListener("click", closeModal);
-    reviewModal.addEventListener("click", function (e) {
-        if (e.target === reviewModal) closeModal();
-    });
+    const closeBtn = document.getElementById("closeModalButton");
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-    document.getElementById("viewFileButton").addEventListener("click", async function () {
-        if (selectedFile && selectedFile.filePath) {
-            await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
-        } else {
-            alert("No document file is attached.");
-        }
-    });
+    if (reviewModal) {
+        reviewModal.addEventListener("click", function (e) {
+            if (e.target === reviewModal) closeModal();
+        });
+    }
 
-    document.getElementById("approveButton").addEventListener("click", () => submitReview("approved"));
-    document.getElementById("rejectButton").addEventListener("click", () => submitReview("rejected"));
+    const appBtn = document.getElementById("approveButton");
+    if (appBtn) appBtn.addEventListener("click", () => submitReview("approved"));
+
+    const rejBtn = document.getElementById("rejectButton");
+    if (rejBtn) rejBtn.addEventListener("click", () => submitReview("rejected"));
 }
 
 function openModal(file) {
     selectedFile = file;
 
-    document.getElementById("modalTitle").textContent = file.title;
-    document.getElementById("modalResearcher").textContent = file.researcher;
-    document.getElementById("modalCoResearchers").textContent = file.coResearchers || "None";
-    document.getElementById("modalCategory").textContent = file.category;
-    document.getElementById("modalDepartment").textContent = file.department || "N/A";
-    document.getElementById("modalYear").textContent = file.publicationYear || "N/A";
-    document.getElementById("modalSubmittedBy").textContent = `${file.uploadedBy} (${file.uploadedByEmail || ""})`;
-    document.getElementById("modalDate").textContent = file.dateUploaded || "N/A";
-    document.getElementById("modalDescription").textContent = file.description || "No description provided.";
-    document.getElementById("reviewComment").value = "";
+    const mFileId = document.getElementById("modalFileId");
+    if (mFileId) mFileId.textContent = file.id;
+    const mDate = document.getElementById("modalDate");
+    if (mDate) mDate.textContent = file.dateUploaded || "N/A";
+    const mTitle = document.getElementById("modalTitle");
+    if (mTitle) mTitle.textContent = file.title;
+    const mRes = document.getElementById("modalResearcher");
+    if (mRes) mRes.textContent = file.researcher;
+    const mCat = document.getElementById("modalCategory");
+    if (mCat) mCat.textContent = file.category;
+    const mDesc = document.getElementById("modalDescription");
+    if (mDesc) mDesc.textContent = file.description || "No description provided.";
+    const revComment = document.getElementById("reviewComment");
+    if (revComment) revComment.value = "";
 
-    reviewModal.classList.add("active");
+    if (reviewModal) reviewModal.classList.add("active");
 }
 
 function closeModal() {
-    reviewModal.classList.remove("active");
+    if (reviewModal) reviewModal.classList.remove("active");
     selectedFile = null;
 }
 
 async function submitReview(newStatus) {
     if (!selectedFile) return;
 
-    const comment = document.getElementById("reviewComment").value.trim();
+    const comment = (document.getElementById("reviewComment")?.value || "").trim();
 
     try {
         await window.refmansyApi.research.updateStatus(

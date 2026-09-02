@@ -7,7 +7,7 @@ let currentProfile = null;
 let researchFiles = [];
 let categoriesList = [];
 
-const searchInput = document.getElementById("searchReportInput");
+const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
 const statusFilter = document.getElementById("statusFilter");
 const startDateInput = document.getElementById("startDate");
@@ -32,7 +32,9 @@ async function initializeReports() {
 
 async function loadReportData() {
     try {
-        reportTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Generating analytics reports...</td></tr>`;
+        if (reportTable) {
+            reportTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Generating analytics reports...</td></tr>`;
+        }
 
         const [files, categories] = await Promise.all([
             window.refmansyApi.research.getAllFiles(),
@@ -50,7 +52,9 @@ async function loadReportData() {
         displayGeneratedDate();
     } catch (err) {
         console.error("Error loading report data:", err);
-        reportTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        if (reportTable) {
+            reportTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+        }
     }
 }
 
@@ -60,16 +64,16 @@ function updateReportSummary() {
     const pending = researchFiles.filter(f => f.status === "pending").length;
     const rejected = researchFiles.filter(f => f.status === "rejected").length;
 
-    const totalEl = document.getElementById("totalReportFiles");
+    const totalEl = document.getElementById("totalUploaded");
     if (totalEl) totalEl.textContent = total;
 
-    const approvedEl = document.getElementById("approvedReportFiles");
+    const approvedEl = document.getElementById("totalApproved");
     if (approvedEl) approvedEl.textContent = approved;
 
-    const pendingEl = document.getElementById("pendingReportFiles");
+    const pendingEl = document.getElementById("totalPending");
     if (pendingEl) pendingEl.textContent = pending;
 
-    const rejectedEl = document.getElementById("rejectedReportFiles");
+    const rejectedEl = document.getElementById("totalRejected");
     if (rejectedEl) rejectedEl.textContent = rejected;
 }
 
@@ -83,27 +87,27 @@ function updateStatusDistribution() {
     const pendingPercent = Math.round((pending / total) * 100);
     const rejectedPercent = Math.round((rejected / total) * 100);
 
-    const approvedBar = document.getElementById("approvedBar");
+    const approvedBar = document.getElementById("approvedChartBar");
     if (approvedBar) approvedBar.style.width = `${approvedPercent}%`;
 
-    const pendingBar = document.getElementById("pendingBar");
+    const pendingBar = document.getElementById("pendingChartBar");
     if (pendingBar) pendingBar.style.width = `${pendingPercent}%`;
 
-    const rejectedBar = document.getElementById("rejectedBar");
+    const rejectedBar = document.getElementById("rejectedChartBar");
     if (rejectedBar) rejectedBar.style.width = `${rejectedPercent}%`;
 
-    const approvedLabel = document.getElementById("approvedPercent");
-    if (approvedLabel) approvedLabel.textContent = `${approvedPercent}% (${approved})`;
+    const approvedVal = document.getElementById("approvedChartValue");
+    if (approvedVal) approvedVal.textContent = `${approvedPercent}% (${approved})`;
 
-    const pendingLabel = document.getElementById("pendingPercent");
-    if (pendingLabel) pendingLabel.textContent = `${pendingPercent}% (${pending})`;
+    const pendingVal = document.getElementById("pendingChartValue");
+    if (pendingVal) pendingVal.textContent = `${pendingPercent}% (${pending})`;
 
-    const rejectedLabel = document.getElementById("rejectedPercent");
-    if (rejectedLabel) rejectedLabel.textContent = `${rejectedPercent}% (${rejected})`;
+    const rejectedVal = document.getElementById("rejectedChartValue");
+    if (rejectedVal) rejectedVal.textContent = `${rejectedPercent}% (${rejected})`;
 }
 
 function updateCategoryDistribution() {
-    const container = document.getElementById("categoryBreakdown");
+    const container = document.getElementById("categoryReport");
     if (!container) return;
 
     container.innerHTML = "";
@@ -133,6 +137,7 @@ function updateCategoryDistribution() {
 }
 
 function populateCategoryOptions() {
+    if (!categoryFilter) return;
     categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
     categoriesList.forEach(cat => {
         const opt = document.createElement("option");
@@ -143,30 +148,30 @@ function populateCategoryOptions() {
 }
 
 function setupFilters() {
-    searchInput.addEventListener("input", filterReport);
-    categoryFilter.addEventListener("change", filterReport);
-    statusFilter.addEventListener("change", filterReport);
-    startDateInput.addEventListener("change", filterReport);
-    endDateInput.addEventListener("change", filterReport);
+    if (searchInput) searchInput.addEventListener("input", filterReport);
+    if (categoryFilter) categoryFilter.addEventListener("change", filterReport);
+    if (statusFilter) statusFilter.addEventListener("change", filterReport);
+    if (startDateInput) startDateInput.addEventListener("change", filterReport);
+    if (endDateInput) endDateInput.addEventListener("change", filterReport);
 
     if (clearFiltersButton) {
         clearFiltersButton.addEventListener("click", function () {
-            searchInput.value = "";
-            categoryFilter.value = "all";
-            statusFilter.value = "all";
-            startDateInput.value = "";
-            endDateInput.value = "";
+            if (searchInput) searchInput.value = "";
+            if (categoryFilter) categoryFilter.value = "all";
+            if (statusFilter) statusFilter.value = "all";
+            if (startDateInput) startDateInput.value = "";
+            if (endDateInput) endDateInput.value = "";
             filterReport();
         });
     }
 }
 
 function filterReport() {
-    const term = searchInput.value.trim().toLowerCase();
-    const cat = categoryFilter.value;
-    const stat = statusFilter.value.toLowerCase();
-    const start = startDateInput.value;
-    const end = endDateInput.value;
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const cat = categoryFilter?.value || "all";
+    const stat = (statusFilter?.value || "all").toLowerCase();
+    const start = startDateInput?.value || "";
+    const end = endDateInput?.value || "";
 
     const filtered = researchFiles.filter(file => {
         const matchesTerm =
@@ -189,11 +194,15 @@ function filterReport() {
         return matchesTerm && matchesCat && matchesStat && matchesDate;
     });
 
-    resultCount.textContent = `Showing ${filtered.length} research file${filtered.length === 1 ? "" : "s"}`;
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} research file${filtered.length === 1 ? "" : "s"}`;
+    }
+
     renderReportTable(filtered);
 }
 
 function renderReportTable(files) {
+    if (!reportTable) return;
     reportTable.innerHTML = "";
 
     if (!files || files.length === 0) {

@@ -9,13 +9,14 @@ let tags = [];
 let allFiles = [];
 let editingCategoryId = null;
 
-const categoriesTableBody = document.getElementById("categoriesTableBody");
-const tagsListContainer = document.getElementById("tagsList");
+const categoriesTable = document.getElementById("categoriesTable");
+const tagsContainer = document.getElementById("tagsContainer");
 const categorySearch = document.getElementById("categorySearch");
 const categoryModal = document.getElementById("categoryModal");
 const categoryForm = document.getElementById("categoryForm");
 const tagForm = document.getElementById("tagForm");
 const categoryMessage = document.getElementById("categoryMessage");
+const categoryCount = document.getElementById("categoryCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("admin", function (profile, user) {
@@ -34,7 +35,9 @@ async function initializePage() {
 
 async function loadData() {
     try {
-        categoriesTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading categories...</td></tr>`;
+        if (categoriesTable) {
+            categoriesTable.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading categories...</td></tr>`;
+        }
 
         const [cats, tgs, files] = await Promise.all([
             window.refmansyApi.categories.getAll(),
@@ -57,28 +60,40 @@ async function loadData() {
 function updateSummary() {
     const categorizedCount = allFiles.filter(f => f.category && f.category.trim() !== "").length;
 
-    document.getElementById("totalCategories").textContent = categories.length;
-    document.getElementById("totalTags").textContent = tags.length;
-    document.getElementById("categorizedFiles").textContent = categorizedCount;
+    const totalCatsEl = document.getElementById("totalCategories");
+    if (totalCatsEl) totalCatsEl.textContent = categories.length;
+
+    const totalTagsEl = document.getElementById("totalTags");
+    if (totalTagsEl) totalTagsEl.textContent = tags.length;
+
+    const catFilesEl = document.getElementById("categorizedFiles");
+    if (catFilesEl) catFilesEl.textContent = categorizedCount;
 }
 
 function setupSearch() {
-    categorySearch.addEventListener("input", function () {
-        const term = this.value.trim().toLowerCase();
-        const filtered = categories.filter(c =>
-            c.name.toLowerCase().includes(term) ||
-            (c.description && c.description.toLowerCase().includes(term))
-        );
-        renderCategories(filtered);
-    });
+    if (categorySearch) {
+        categorySearch.addEventListener("input", function () {
+            const term = this.value.trim().toLowerCase();
+            const filtered = categories.filter(c =>
+                c.name.toLowerCase().includes(term) ||
+                (c.description && c.description.toLowerCase().includes(term))
+            );
+            renderCategories(filtered);
+        });
+    }
 }
 
 function renderCategories(list) {
-    categoriesTableBody.innerHTML = "";
+    if (!categoriesTable) return;
+    categoriesTable.innerHTML = "";
 
     if (!list || list.length === 0) {
-        categoriesTableBody.innerHTML = `<tr><td colspan="4" class="empty-table">No categories found.</td></tr>`;
+        categoriesTable.innerHTML = `<tr><td colspan="4" class="empty-table">No categories found.</td></tr>`;
         return;
+    }
+
+    if (categoryCount) {
+        categoryCount.textContent = `Showing ${list.length} categories`;
     }
 
     list.forEach(cat => {
@@ -104,15 +119,16 @@ function renderCategories(list) {
         row.querySelector(".edit-cat-btn").addEventListener("click", () => openEditCategory(cat));
         row.querySelector(".delete-cat-btn").addEventListener("click", () => deleteCategory(cat));
 
-        categoriesTableBody.appendChild(row);
+        categoriesTable.appendChild(row);
     });
 }
 
 function renderTags(list) {
-    tagsListContainer.innerHTML = "";
+    if (!tagsContainer) return;
+    tagsContainer.innerHTML = "";
 
     if (!list || list.length === 0) {
-        tagsListContainer.innerHTML = `<p class="empty-tags">No tags created yet.</p>`;
+        tagsContainer.innerHTML = `<p class="empty-tags">No tags created yet.</p>`;
         return;
     }
 
@@ -128,48 +144,64 @@ function renderTags(list) {
         `;
 
         tagEl.querySelector(".btn-remove-tag").addEventListener("click", () => deleteTag(tag));
-        tagsListContainer.appendChild(tagEl);
+        tagsContainer.appendChild(tagEl);
     });
 }
 
 function setupModal() {
-    document.getElementById("addCategoryButton").addEventListener("click", openAddCategory);
-    document.getElementById("closeModalButton").addEventListener("click", closeCategoryModal);
-    document.getElementById("cancelButton").addEventListener("click", closeCategoryModal);
+    const addBtn = document.getElementById("addCategoryButton");
+    if (addBtn) addBtn.addEventListener("click", openAddCategory);
 
-    categoryModal.addEventListener("click", function (e) {
-        if (e.target === categoryModal) closeCategoryModal();
-    });
+    const closeBtn = document.getElementById("closeModalButton");
+    if (closeBtn) closeBtn.addEventListener("click", closeCategoryModal);
+
+    const cancelBtn = document.getElementById("cancelButton");
+    if (cancelBtn) cancelBtn.addEventListener("click", closeCategoryModal);
+
+    if (categoryModal) {
+        categoryModal.addEventListener("click", function (e) {
+            if (e.target === categoryModal) closeCategoryModal();
+        });
+    }
 }
 
 function openAddCategory() {
     editingCategoryId = null;
-    document.getElementById("modalTitle").textContent = "Add Category";
-    categoryForm.reset();
+    const mTitle = document.getElementById("modalTitle");
+    if (mTitle) mTitle.textContent = "Add Category";
+    if (categoryForm) categoryForm.reset();
     clearCategoryMessage();
-    categoryModal.classList.add("active");
+    if (categoryModal) categoryModal.classList.add("active");
 }
 
 function openEditCategory(cat) {
     editingCategoryId = cat.id;
-    document.getElementById("modalTitle").textContent = "Edit Category";
-    document.getElementById("categoryName").value = cat.name;
-    document.getElementById("categoryDescription").value = cat.description || "";
+    const mTitle = document.getElementById("modalTitle");
+    if (mTitle) mTitle.textContent = "Edit Category";
+
+    const nameInput = document.getElementById("categoryName");
+    if (nameInput) nameInput.value = cat.name;
+
+    const descInput = document.getElementById("categoryDescription");
+    if (descInput) descInput.value = cat.description || "";
+
     clearCategoryMessage();
-    categoryModal.classList.add("active");
+    if (categoryModal) categoryModal.classList.add("active");
 }
 
 function closeCategoryModal() {
-    categoryModal.classList.remove("active");
+    if (categoryModal) categoryModal.classList.remove("active");
     editingCategoryId = null;
 }
 
 function setupCategoryForm() {
+    if (!categoryForm) return;
+
     categoryForm.addEventListener("submit", async function (e) {
         e.preventDefault();
 
-        const name = document.getElementById("categoryName").value.trim();
-        const description = document.getElementById("categoryDescription").value.trim();
+        const name = (document.getElementById("categoryName")?.value || "").trim();
+        const description = (document.getElementById("categoryDescription")?.value || "").trim();
         const saveBtn = categoryForm.querySelector("button[type='submit']");
 
         if (!name) {
@@ -178,8 +210,10 @@ function setupCategoryForm() {
         }
 
         try {
-            saveBtn.disabled = true;
-            saveBtn.textContent = "Saving...";
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = "Saving...";
+            }
 
             if (editingCategoryId) {
                 await window.refmansyApi.categories.update(editingCategoryId, name, description);
@@ -193,8 +227,10 @@ function setupCategoryForm() {
             console.error("Save category error:", err);
             showCategoryMessage(err.message || "Failed to save category.", "error");
         } finally {
-            saveBtn.disabled = false;
-            saveBtn.textContent = "Save Category";
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = "Save Category";
+            }
         }
     });
 }
@@ -212,17 +248,19 @@ async function deleteCategory(cat) {
 }
 
 function setupTagForm() {
+    if (!tagForm) return;
+
     tagForm.addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const input = document.getElementById("tagName");
-        const tagName = input.value.trim();
+        const tagName = (input?.value || "").trim();
 
         if (!tagName) return;
 
         try {
             await window.refmansyApi.categories.createTag(tagName);
-            input.value = "";
+            if (input) input.value = "";
             tags = await window.refmansyApi.categories.getTags();
             updateSummary();
             renderTags(tags);
@@ -246,11 +284,13 @@ async function deleteTag(tag) {
 }
 
 function showCategoryMessage(text, type) {
+    if (!categoryMessage) return;
     categoryMessage.textContent = text;
     categoryMessage.className = "form-message " + type;
 }
 
 function clearCategoryMessage() {
+    if (!categoryMessage) return;
     categoryMessage.textContent = "";
     categoryMessage.className = "form-message";
 }

@@ -7,11 +7,13 @@ let currentProfile = null;
 let approvedFiles = [];
 let downloadHistory = [];
 
+const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
 const yearFilter = document.getElementById("yearFilter");
 const downloadFilesTable = document.getElementById("downloadFilesTable");
 const downloadHistoryTable = document.getElementById("downloadHistoryTable");
 const clearHistoryButton = document.getElementById("clearHistoryButton");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("faculty", function (profile, user) {
@@ -28,10 +30,13 @@ async function initializePage() {
 
 async function loadPageData() {
     try {
-        downloadFilesTable.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available files...</td></tr>`;
-        downloadHistoryTable.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading download history...</td></tr>`;
+        if (downloadFilesTable) {
+            downloadFilesTable.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available files...</td></tr>`;
+        }
+        if (downloadHistoryTable) {
+            downloadHistoryTable.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading download history...</td></tr>`;
+        }
 
-        // Fetch approved files & user download logs concurrently
         const [files, history, categories] = await Promise.all([
             window.refmansyApi.research.getApprovedFiles(),
             window.refmansyApi.downloads.getMyDownloads(currentProfile.id),
@@ -44,7 +49,7 @@ async function loadPageData() {
         populateCategoryFilter(categories);
         populateYearFilter();
         updateSummary();
-        renderAvailableFiles(approvedFiles);
+        filterAvailableFiles();
         renderDownloadHistory(downloadHistory);
     } catch (err) {
         console.error("Error loading download records page:", err);
@@ -55,12 +60,16 @@ function updateSummary() {
     const today = new Date().toISOString().split("T")[0];
     const recentToday = downloadHistory.filter(h => h.downloaded_at && h.downloaded_at.startsWith(today)).length;
 
-    document.getElementById("availableFiles").textContent = approvedFiles.length;
-    document.getElementById("totalDownloads").textContent = downloadHistory.length;
-    document.getElementById("recentDownloads").textContent = recentToday;
+    const availEl = document.getElementById("availableFiles");
+    if (availEl) availEl.textContent = approvedFiles.length;
+    const totDlEl = document.getElementById("totalDownloads");
+    if (totDlEl) totDlEl.textContent = downloadHistory.length;
+    const recDlEl = document.getElementById("recentDownloads");
+    if (recDlEl) recDlEl.textContent = recentToday;
 }
 
 function populateCategoryFilter(categories) {
+    if (!categoryFilter) return;
     categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
     categories.forEach(cat => {
         const opt = document.createElement("option");
@@ -71,6 +80,7 @@ function populateCategoryFilter(categories) {
 }
 
 function populateYearFilter() {
+    if (!yearFilter) return;
     const years = [...new Set(approvedFiles.map(f => f.publicationYear).filter(Boolean))].sort((a, b) => b - a);
     yearFilter.innerHTML = `<option value="all">All Years</option>`;
     years.forEach(yr => {
@@ -82,24 +92,36 @@ function populateYearFilter() {
 }
 
 function setupFilters() {
-    categoryFilter.addEventListener("change", filterAvailableFiles);
-    yearFilter.addEventListener("change", filterAvailableFiles);
+    if (searchInput) searchInput.addEventListener("input", filterAvailableFiles);
+    if (categoryFilter) categoryFilter.addEventListener("change", filterAvailableFiles);
+    if (yearFilter) yearFilter.addEventListener("change", filterAvailableFiles);
 }
 
 function filterAvailableFiles() {
-    const cat = categoryFilter.value;
-    const yr = yearFilter.value;
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const cat = categoryFilter?.value || "all";
+    const yr = yearFilter?.value || "all";
 
     const filtered = approvedFiles.filter(file => {
+        const matchTerm =
+            !term ||
+            file.title.toLowerCase().includes(term) ||
+            file.researcher.toLowerCase().includes(term);
+
         const matchCat = cat === "all" || file.category === cat;
         const matchYr = yr === "all" || String(file.publicationYear) === String(yr);
-        return matchCat && matchYr;
+        return matchTerm && matchCat && matchYr;
     });
+
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${approvedFiles.length} files`;
+    }
 
     renderAvailableFiles(filtered);
 }
 
 function renderAvailableFiles(files) {
+    if (!downloadFilesTable) return;
     downloadFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
@@ -132,7 +154,6 @@ function renderAvailableFiles(files) {
             if (file.filePath) {
                 await window.refmansyApi.downloads.logDownload(file.id, file.title, file.category);
                 await window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
-                // Refresh download history
                 downloadHistory = await window.refmansyApi.downloads.getMyDownloads(currentProfile.id);
                 updateSummary();
                 renderDownloadHistory(downloadHistory);
@@ -146,6 +167,7 @@ function renderAvailableFiles(files) {
 }
 
 function renderDownloadHistory(history) {
+    if (!downloadHistoryTable) return;
     downloadHistoryTable.innerHTML = "";
 
     if (!history || history.length === 0) {
