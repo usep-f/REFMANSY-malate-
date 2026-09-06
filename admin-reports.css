@@ -58,8 +58,34 @@ select {
 .admin-profile {
     padding: 0 4px 25px;
     display: flex;
+    flex-direction: column;
     align-items: center;
+    text-align: center;
     gap: 12px;
+}
+
+.profile-logos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.profile-logos img,
+.profile-logo-img {
+    width: 52px;
+    height: 52px;
+    max-width: 52px;
+    max-height: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+    transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.profile-logos img:hover,
+.profile-logo-img:hover {
+    transform: scale(1.06);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.12));
 }
 
 .profile-logo {
@@ -81,11 +107,12 @@ select {
 
 .profile-information {
     min-width: 0;
+    text-align: center;
 }
 
 .profile-information h1 {
-    color: #222222;
-    font-size: 14.5px;
+    color: #1e293b;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1.25;
     margin-bottom: 3px;
