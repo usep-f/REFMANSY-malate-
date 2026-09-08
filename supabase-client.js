@@ -81,10 +81,15 @@ const refmansyApi = {
                 }
             }
 
+            const redirectUrl = (typeof window !== "undefined" && window.location?.origin)
+                ? `${window.location.origin}/login.html?verified=true`
+                : undefined;
+
             const { data, error } = await supabaseClient.auth.signUp({
                 email: email.trim(),
                 password: password,
                 options: {
+                    emailRedirectTo: redirectUrl,
                     data: {
                         full_name: fullname.trim(),
                         fullname: fullname.trim(),
@@ -200,19 +205,32 @@ const refmansyApi = {
             return data;
         },
 
-        // Resend signup confirmation OTP
+        // Resend signup confirmation OTP / link
         async resendSignUpOtp(email) {
+            const redirectUrl = (typeof window !== "undefined" && window.location?.origin)
+                ? `${window.location.origin}/login.html?verified=true`
+                : undefined;
+
             const { data, error } = await supabaseClient.auth.resend({
                 type: "signup",
-                email: email.trim()
+                email: email.trim(),
+                options: {
+                    emailRedirectTo: redirectUrl
+                }
             });
             if (error) throw error;
             return data;
         },
 
-        // Request password reset OTP
+        // Request password reset OTP / recovery link
         async sendPasswordResetOtp(email) {
-            const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email.trim());
+            const redirectUrl = (typeof window !== "undefined" && window.location?.origin)
+                ? `${window.location.origin}/login.html`
+                : undefined;
+
+            const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email.trim(), {
+                redirectTo: redirectUrl
+            });
             if (error) throw error;
             return data;
         },

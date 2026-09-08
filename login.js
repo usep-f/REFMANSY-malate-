@@ -53,9 +53,9 @@ const COOLDOWN_SECONDS = 60;
         showMessage("Email verified successfully! You may now log in.", "success");
     }
 
-    // Check if user arrived by clicking a password reset email link
+    // Check if user arrived by clicking an email link (hash parameters)
     const hash = window.location.hash || "";
-    if (hash.includes("type=recovery") || hash.includes("access_token=")) {
+    if (hash.includes("type=recovery")) {
         setTimeout(() => {
             openRecoveryModal();
             hideAllModalSteps();
@@ -63,6 +63,11 @@ const COOLDOWN_SECONDS = 60;
             showModalMessage("Identity verified via recovery link. Please set your new password below.", "info", recoveryMessage3);
             setTimeout(() => newPasswordInput.focus(), 200);
         }, 300);
+    } else if (hash.includes("type=signup") || (hash.includes("access_token=") && !hash.includes("type=recovery"))) {
+        showMessage("Email verified successfully! You may now log in.", "success");
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.pathname);
+        }
     }
 })();
 
