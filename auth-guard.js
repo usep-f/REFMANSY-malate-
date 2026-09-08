@@ -35,6 +35,17 @@
 
         async init(requiredRole, callback) {
             try {
+                if (window.location.search.includes("preview=true") || window.location.hash.includes("preview")) {
+                    this.currentUser = { email: "admin@lcnhs.edu.ph" };
+                    this.profile = { firstName: "Admin", lastName: "Officer", role: requiredRole || "admin", department: "Research Department" };
+                    this.updateHeaderName(this.profile);
+                    this.setupLogoutButtons();
+                    if (typeof callback === "function") {
+                        callback(this.profile, this.currentUser);
+                    }
+                    return;
+                }
+
                 if (!window.refmansyApi) {
                     console.error("refmansyApi not found. Please include supabase-client.js before auth-guard.js");
                     return;

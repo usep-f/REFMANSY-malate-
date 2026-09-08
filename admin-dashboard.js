@@ -69,9 +69,9 @@ function updateDashboardMetrics() {
             const approvedPct = (approved / totalFiles) * 100;
             const pendingPct = approvedPct + (pending / totalFiles) * 100;
             donutChart.style.background = `conic-gradient(
-                var(--approved-blue, #68a9e1) 0% ${approvedPct}%,
-                var(--pending-blue, #bed8ed) ${approvedPct}% ${pendingPct}%,
-                var(--rejected-gray, #d7e0e5) ${pendingPct}% 100%
+                var(--approved-green, #16a34a) 0% ${approvedPct}%,
+                var(--pending-yellow, #d97706) ${approvedPct}% ${pendingPct}%,
+                var(--rejected-gray, #cbd5e1) ${pendingPct}% 100%
             )`;
         }
     }

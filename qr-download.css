@@ -1,18 +1,23 @@
 :root {
-    --primary-blue: #73aee7;
-    --dark-blue: #3679bb;
-    --navy-blue: #1e3a8a;
-    --light-blue: #eaf4fd;
-    --approved-green: #10b981;
+    --primary-green: #1f9254;
+    --dark-green: #14532d;
+    --navy-blue: #0f291e;
+    --light-green: #cef5d8;
+    --approved-green: #16a34a;
     --green-light: #ecfdf5;
-    --background: #f1f5f9;
+    --background: #d9ffd9;
     --card-bg: #ffffff;
-    --border-color: #e2e8f0;
-    --text-dark: #0f172a;
-    --text-muted: #64748b;
+    --border-color: #bfe8cc;
+    --text-dark: #16261d;
+    --text-muted: #65776d;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+    --shadow-lg: 0 20px 25px -5px rgb(20 60 40 / 0.08), 0 8px 10px -6px rgb(20 60 40 / 0.06);
+
+    /* Theme Aliases */
+    --primary-blue: var(--primary-green);
+    --dark-blue: var(--dark-green);
+    --light-blue: var(--light-green);
 }
 
 * {
@@ -24,7 +29,7 @@
 body {
     min-height: 100vh;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #e2e8f0 0%, #edf2f7 50%, #e0e7ff 100%);
+    background: linear-gradient(135deg, #e9fde9 0%, #d9ffd9 50%, #daf8df 100%);
     color: var(--text-dark);
     display: flex;
     justify-content: center;
@@ -279,7 +284,7 @@ body {
 
 .primary-download-btn {
     width: 100%;
-    background: linear-gradient(135deg, var(--dark-blue), #2563eb);
+    background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
     color: white;
     text-decoration: none;
     padding: 0.95rem 1.5rem;
@@ -290,7 +295,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 4px 12px rgba(31, 146, 84, 0.3);
     transition: all 0.2s ease;
     border: none;
     cursor: pointer;
@@ -298,7 +303,7 @@ body {
 
 .primary-download-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    box-shadow: 0 6px 16px rgba(31, 146, 84, 0.4);
 }
 
 .primary-download-btn:active {
