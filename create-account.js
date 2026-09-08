@@ -67,11 +67,11 @@ createAccountForm.addEventListener("submit", async function (event) {
         startConfirmationPolling();
     } catch (error) {
         console.error("Account creation error:", error);
-        showMessage(
-            error.message || "Failed to create account. Please try again.",
-            "error",
-            message
-        );
+        let errorMsg = error.message || "Failed to create account. Please try again.";
+        if (errorMsg.toLowerCase().includes("rate limit")) {
+            errorMsg = "Email rate limit exceeded: Supabase default email allows only ~3-4 emails per hour. Please wait for the cooldown or connect a Custom SMTP in Supabase.";
+        }
+        showMessage(errorMsg, "error", message);
         submitBtn.disabled = false;
         submitBtn.textContent = "Create Account";
     }
