@@ -178,6 +178,64 @@ const refmansyApi = {
             const { error } = await supabaseClient.auth.signOut();
             if (error) console.error("Sign out error:", error);
             window.location.replace("login.html");
+        },
+
+        // Verify registration 6-digit OTP
+        async verifySignUpOtp(email, token) {
+            const { data, error } = await supabaseClient.auth.verifyOtp({
+                email: email.trim(),
+                token: token.trim(),
+                type: "signup"
+            });
+            if (error) throw error;
+
+            // Ensure profile row is set to active
+            if (data?.user?.id) {
+                await supabaseClient
+                    .from("profiles")
+                    .update({ status: "active", updated_at: new Date().toISOString() })
+                    .eq("id", data.user.id);
+            }
+
+            return data;
+        },
+
+        // Resend signup confirmation OTP
+        async resendSignUpOtp(email) {
+            const { data, error } = await supabaseClient.auth.resend({
+                type: "signup",
+                email: email.trim()
+            });
+            if (error) throw error;
+            return data;
+        },
+
+        // Request password reset OTP
+        async sendPasswordResetOtp(email) {
+            const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email.trim());
+            if (error) throw error;
+            return data;
+        },
+
+        // Verify password reset OTP
+        async verifyPasswordResetOtp(email, token) {
+            const { data, error } = await supabaseClient.auth.verifyOtp({
+                email: email.trim(),
+                token: token.trim(),
+                type: "recovery"
+            });
+            if (error) throw error;
+            return data;
+        },
+
+        // Update password for currently authenticated recovery session and then sign out cleanly
+        async updatePassword(newPassword) {
+            const { data, error } = await supabaseClient.auth.updateUser({
+                password: newPassword
+            });
+            if (error) throw error;
+            await supabaseClient.auth.signOut();
+            return data;
         }
     },
 

@@ -20,85 +20,142 @@
                 <img src="RESPROGRAM.png" alt="Research Program Logo" class="login-logo-img" width="58" height="58">
             </div>
 
-            <h1>Refmansy</h1>
-            <h2>Create Account</h2>
-            <p class="subtitle">Enter your information to create an account.</p>
+            <div id="stepRegistration" class="auth-step active">
+                <h1>Refmansy</h1>
+                <h2>Create Account</h2>
+                <p class="subtitle">Enter your information to create an account.</p>
 
-            <form id="createAccountForm">
+                <form id="createAccountForm">
 
-                <div class="input-group">
-                    <label for="fullname">Full Name</label>
-                    <input
-                        type="text"
-                        id="fullname"
-                        placeholder="Enter your full name"
-                        required
-                    >
+                    <div class="input-group">
+                        <label for="fullname">Full Name</label>
+                        <input
+                            type="text"
+                            id="fullname"
+                            placeholder="Enter your full name"
+                            required
+                        >
+                    </div>
+
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            placeholder="Create a username"
+                            required
+                        >
+                    </div>
+
+                    <div class="input-group">
+                        <label for="email">Email Address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="Enter your email address"
+                            required
+                        >
+                    </div>
+
+                    <div class="input-group">
+                        <label for="role">Account Type</label>
+                        <select id="role" required>
+                            <option value="">Select account type</option>
+                            <option value="admin">Admin</option>
+                            <option value="faculty">Faculty</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            placeholder="Create a password"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+
+                    <div class="input-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            placeholder="Confirm your password"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+
+                    <p id="message" class="message"></p>
+
+                    <button type="submit" class="create-button">
+                        Create Account
+                    </button>
+
+                    <p class="login-link">
+                        Already have an account?
+                        <a href="login.html">Log in</a>
+                    </p>
+
+                </form>
+            </div>
+
+            <!-- STEP 2: Email Confirmation Link Sent -->
+            <div id="stepOtpVerification" class="auth-step" style="display: none;">
+                <div class="otp-icon-container">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1e3a5f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </svg>
                 </div>
 
-                <div class="input-group">
-                    <label for="username">Username</label>
-                    <input
-                        type="text"
-                        id="username"
-                        placeholder="Create a username"
-                        required
-                    >
-                </div>
-
-                <div class="input-group">
-                    <label for="email">Email Address</label>
-                    <input
-                        type="email"
-                        id="email"
-                        placeholder="Enter your email address"
-                        required
-                    >
-                </div>
-
-                <div class="input-group">
-                    <label for="role">Account Type</label>
-                    <select id="role" required>
-                        <option value="">Select account type</option>
-                        <option value="admin">Admin</option>
-                        <option value="faculty">Faculty</option>
-                    </select>
-                </div>
-
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        placeholder="Create a password"
-                        minlength="6"
-                        required
-                    >
-                </div>
-
-                <div class="input-group">
-                    <label for="confirmPassword">Confirm Password</label>
-                    <input
-                        type="password"
-                        id="confirmPassword"
-                        placeholder="Confirm your password"
-                        minlength="6"
-                        required
-                    >
-                </div>
-
-                <p id="message" class="message"></p>
-
-                <button type="submit" class="create-button">
-                    Create Account
-                </button>
-
-                <p class="login-link">
-                    Already have an account?
-                    <a href="login.html">Log in</a>
+                <h1>Refmansy</h1>
+                <h2>Check Your Email</h2>
+                <p class="subtitle">
+                    We've sent a confirmation link to<br>
+                    <strong id="otpEmailDisplay" class="highlight-email"></strong>
                 </p>
 
-            </form>
+                <div class="email-instructions-box">
+                    <div class="instruction-item">
+                        <span class="step-num">1</span>
+                        <span>Open the confirmation email in your inbox.</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="step-num">2</span>
+                        <span>Click the <strong>"Confirm email address"</strong> link.</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="step-num">3</span>
+                        <span>This screen will automatically confirm and log you in!</span>
+                    </div>
+                </div>
+
+                <div class="waiting-indicator">
+                    <span class="pulse-dot"></span>
+                    <span>Waiting for email confirmation...</span>
+                </div>
+
+                <p id="otpMessage" class="message"></p>
+
+                <div class="otp-resend-row">
+                    <span>Didn't receive the email?</span>
+                    <button type="button" id="resendOtpBtn" class="link-button" disabled>
+                        Resend Link (<span id="resendTimer">60</span>s)
+                    </button>
+                </div>
+
+                <p class="otp-back-link">
+                    <a href="#" id="otpBackLink">&larr; Edit details / Change email</a>
+                </p>
+
+                <p class="login-link" style="margin-top: 25px;">
+                    Already confirmed?
+                    <a href="login.html">Proceed to Login</a>
+                </p>
+            </div>
 
         </section>
 

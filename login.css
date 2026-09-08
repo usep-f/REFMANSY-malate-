@@ -111,12 +111,18 @@ body {
     box-shadow: 0 0 0 3px rgba(79, 134, 198, 0.15);
 }
 
+.login-options-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -6px;
+    margin-bottom: 18px;
+}
+
 .password-option {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: -5px;
-    margin-bottom: 18px;
 }
 
 .password-option input {
@@ -127,8 +133,57 @@ body {
 
 .password-option label {
     color: #555555;
-    font-size: 14px;
+    font-size: 13.5px;
     cursor: pointer;
+}
+
+.forgot-link {
+    color: #1e3a5f;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-link:hover {
+    color: #4f86c6;
+    text-decoration: underline;
+}
+
+/* Unconfirmed Email Alert */
+.unconfirmed-alert {
+    background-color: #fff8eb;
+    border: 1px solid #fedf89;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: fadeInStep 0.3s ease;
+}
+
+.unconfirmed-text {
+    font-size: 13px;
+    color: #b54708;
+    line-height: 1.4;
+}
+
+.unconfirmed-action-btn {
+    align-self: flex-start;
+    background-color: #f79009;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.unconfirmed-action-btn:hover {
+    background-color: #dc6803;
 }
 
 .message {
@@ -202,5 +257,222 @@ body {
 
     .login-box h2 {
         font-size: 21px;
+    }
+}
+
+/* ================================================================
+   Password Recovery & Verification Modal Styles
+   ================================================================ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 20px;
+    animation: fadeInOverlay 0.25s ease-out;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 34px 30px;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+    animation: scaleInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleInModal {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-close {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #98a2b3;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.modal-close:hover {
+    color: #344054;
+    transform: scale(1.1);
+}
+
+.modal-step {
+    animation: fadeInStep 0.3s ease;
+}
+
+@keyframes fadeInStep {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-icon-container {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background-color: #ebf3fc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(30, 58, 95, 0.1);
+}
+
+.modal-icon-container.success-icon {
+    background-color: #ecfdf3;
+    box-shadow: 0 4px 12px rgba(6, 118, 71, 0.1);
+}
+
+.modal-dialog h3 {
+    color: #1e3a5f;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.modal-subtitle {
+    color: #667085;
+    font-size: 13.5px;
+    text-align: center;
+    margin-bottom: 22px;
+    line-height: 1.45;
+}
+
+.highlight-email {
+    color: #1e3a5f;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+/* Modal Email Instructions */
+.email-instructions-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+
+.instruction-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.4;
+}
+
+.step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    background-color: #1e3a5f;
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 700;
+}
+
+.otp-resend-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666666;
+    margin-top: 16px;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e3a5f;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.link-button:hover:not(:disabled) {
+    color: #315f8f;
+}
+
+.link-button:disabled {
+    color: #98a2b3;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.otp-back-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+}
+
+.otp-back-link a {
+    color: #475467;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.otp-back-link a:hover {
+    color: #1e3a5f;
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .modal-dialog {
+        padding: 26px 18px;
+    }
+
+    .modal-dialog h3 {
+        font-size: 20px;
+    }
+
+    .otp-digit {
+        width: 38px;
+        height: 46px;
+        font-size: 18px;
+        gap: 5px;
     }
 }
