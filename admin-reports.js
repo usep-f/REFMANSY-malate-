@@ -5,7 +5,10 @@
 let currentUser = null;
 let currentProfile = null;
 let researchFiles = [];
+let filteredResearchFiles = [];
 let categoriesList = [];
+let cachedDownloads = null;
+let cachedUsers = null;
 
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
@@ -194,6 +197,11 @@ function filterReport() {
         return matchesTerm && matchesCat && matchesStat && matchesDate;
     });
 
+    filteredResearchFiles = filtered;
+
+    const filteredBadge = document.getElementById("filteredCountBadge");
+    if (filteredBadge) filteredBadge.textContent = filtered.length;
+
     if (resultCount) {
         resultCount.textContent = `Showing ${filtered.length} research file${filtered.length === 1 ? "" : "s"}`;
     }
@@ -252,6 +260,196 @@ function setupReportButtons() {
     const exportBtn = document.getElementById("exportCsvButton");
     if (exportBtn) {
         exportBtn.addEventListener("click", exportToCSV);
+    }
+
+    setupPdfExportModal();
+}
+
+function setupPdfExportModal() {
+    const openBtn = document.getElementById("openExportPdfModalButton");
+    const modal = document.getElementById("exportPdfModal");
+    const closeBtn = document.getElementById("closeExportModalBtn");
+    const cancelBtn = document.getElementById("cancelExportBtn");
+    const generateBtn = document.getElementById("generatePdfBtn");
+    const alertBox = document.getElementById("exportModalAlert");
+
+    if (!openBtn || !modal) return;
+
+    const presetPills = modal.querySelectorAll(".preset-pill");
+    const moduleCheckboxes = {
+        executive: document.getElementById("moduleExecutive"),
+        catalog: document.getElementById("moduleCatalog"),
+        downloads: document.getElementById("moduleDownloads"),
+        faculty: document.getElementById("moduleFaculty")
+    };
+
+    function openModal() {
+        const filteredBadge = document.getElementById("filteredCountBadge");
+        if (filteredBadge) filteredBadge.textContent = filteredResearchFiles.length;
+
+        const totalBadge = document.getElementById("totalCountBadge");
+        if (totalBadge) totalBadge.textContent = researchFiles.length;
+
+        if (alertBox) {
+            alertBox.style.display = "none";
+            alertBox.textContent = "";
+        }
+
+        modal.classList.add("active");
+    }
+
+    function closeModal() {
+        modal.classList.remove("active");
+    }
+
+    openBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+    modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    // Sync card active style with checkbox toggles
+    Object.values(moduleCheckboxes).forEach(cb => {
+        if (!cb) return;
+        const card = cb.closest(".module-card");
+        cb.addEventListener("change", () => {
+            if (card) {
+                if (cb.checked) card.classList.add("active");
+                else card.classList.remove("active");
+            }
+            clearActivePresetPill();
+        });
+    });
+
+    function clearActivePresetPill() {
+        presetPills.forEach(p => p.classList.remove("active"));
+    }
+
+    // Presets handling
+    presetPills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            clearActivePresetPill();
+            pill.classList.add("active");
+            const preset = pill.getAttribute("data-preset");
+
+            if (preset === "all") {
+                setModuleStates({ executive: true, catalog: true, downloads: true, faculty: true });
+            } else if (preset === "executive") {
+                setModuleStates({ executive: true, catalog: false, downloads: false, faculty: false });
+            } else if (preset === "catalog") {
+                setModuleStates({ executive: false, catalog: true, downloads: false, faculty: false });
+            } else if (preset === "readership") {
+                setModuleStates({ executive: true, catalog: false, downloads: true, faculty: false });
+            }
+        });
+    });
+
+    function setModuleStates({ executive, catalog, downloads, faculty }) {
+        if (moduleCheckboxes.executive) {
+            moduleCheckboxes.executive.checked = executive;
+            moduleCheckboxes.executive.closest(".module-card")?.classList.toggle("active", executive);
+        }
+        if (moduleCheckboxes.catalog) {
+            moduleCheckboxes.catalog.checked = catalog;
+            moduleCheckboxes.catalog.closest(".module-card")?.classList.toggle("active", catalog);
+        }
+        if (moduleCheckboxes.downloads) {
+            moduleCheckboxes.downloads.checked = downloads;
+            moduleCheckboxes.downloads.closest(".module-card")?.classList.toggle("active", downloads);
+        }
+        if (moduleCheckboxes.faculty) {
+            moduleCheckboxes.faculty.checked = faculty;
+            moduleCheckboxes.faculty.closest(".module-card")?.classList.toggle("active", faculty);
+        }
+    }
+
+    // Generate PDF action
+    if (generateBtn) {
+        generateBtn.addEventListener("click", async function () {
+            if (alertBox) {
+                alertBox.style.display = "none";
+                alertBox.textContent = "";
+            }
+
+            const modules = {
+                executive: moduleCheckboxes.executive?.checked || false,
+                catalog: moduleCheckboxes.catalog?.checked || false,
+                downloads: moduleCheckboxes.downloads?.checked || false,
+                faculty: moduleCheckboxes.faculty?.checked || false
+            };
+
+            const anySelected = Object.values(modules).some(Boolean);
+            if (!anySelected) {
+                if (alertBox) {
+                    alertBox.textContent = "Please select at least one report module to export.";
+                    alertBox.style.display = "block";
+                }
+                return;
+            }
+
+            const catalogScope = document.querySelector('input[name="catalogScope"]:checked')?.value || "filtered";
+
+            const originalHtml = generateBtn.innerHTML;
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Compiling PDF Report...</span>`;
+
+            try {
+                // Fetch supplemental data if needed
+                if (modules.downloads && !cachedDownloads) {
+                    try {
+                        cachedDownloads = await window.refmansyApi.downloads.getAllDownloads();
+                    } catch (e) {
+                        console.warn("Could not fetch downloads for PDF:", e);
+                        cachedDownloads = [];
+                    }
+                }
+
+                if (modules.faculty && !cachedUsers) {
+                    try {
+                        cachedUsers = await window.refmansyApi.users.getAll();
+                    } catch (e) {
+                        console.warn("Could not fetch users for PDF:", e);
+                        cachedUsers = [];
+                    }
+                }
+
+                const adminName = currentProfile?.full_name || currentProfile?.username || "Administrator";
+                const adminRole = currentProfile?.role || "admin";
+
+                if (!window.refmansyPdfGenerator || !window.refmansyPdfGenerator.generateModularPdfReport) {
+                    throw new Error("PDF Generator module is not available. Please refresh the page.");
+                }
+
+                await window.refmansyPdfGenerator.generateModularPdfReport(
+                    {
+                        modules,
+                        catalogScope,
+                        adminName,
+                        adminRole
+                    },
+                    {
+                        allFiles: researchFiles,
+                        filteredFiles: filteredResearchFiles,
+                        categoriesList: categoriesList,
+                        downloadsList: cachedDownloads || [],
+                        usersList: cachedUsers || []
+                    }
+                );
+
+                closeModal();
+            } catch (err) {
+                console.error("PDF generation failed:", err);
+                if (alertBox) {
+                    alertBox.textContent = `PDF Generation Error: ${err.message || "An unexpected error occurred."}`;
+                    alertBox.style.display = "block";
+                }
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = originalHtml;
+            }
+        });
     }
 }
 

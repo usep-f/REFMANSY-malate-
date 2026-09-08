@@ -107,6 +107,15 @@
 
                     <button
                         type="button"
+                        id="openExportPdfModalButton"
+                        class="export-pdf-button"
+                    >
+                        <i class="fa-solid fa-file-pdf"></i>
+                        Export PDF
+                    </button>
+
+                    <button
+                        type="button"
                         id="exportCsvButton"
                         class="export-button"
                     >
@@ -393,9 +402,138 @@
 
     </div>
 
+    <!-- Modular PDF Export Modal -->
+    <div id="exportPdfModal" class="modal-backdrop">
+        <div class="modal-dialog modal-md">
+            <div class="modal-header">
+                <div class="modal-header-icon">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <div>
+                    <h3>Export PDF Report</h3>
+                    <p>Customize modules and generate an official institutional research dossier.</p>
+                </div>
+                <button type="button" id="closeExportModalBtn" class="modal-close-btn" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Quick Presets -->
+                <div class="presets-container">
+                    <span class="presets-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Quick Presets:</span>
+                    <div class="preset-pills">
+                        <button type="button" class="preset-pill active" data-preset="all">All Modules</button>
+                        <button type="button" class="preset-pill" data-preset="executive">Executive Only</button>
+                        <button type="button" class="preset-pill" data-preset="catalog">Catalog Only</button>
+                        <button type="button" class="preset-pill" data-preset="readership">Readership Audit</button>
+                    </div>
+                </div>
+
+                <!-- Module Selection Cards Grid -->
+                <div class="module-cards-grid">
+                    <!-- Module A -->
+                    <label class="module-card active" for="moduleExecutive">
+                        <div class="module-card-checkbox">
+                            <input type="checkbox" id="moduleExecutive" checked>
+                        </div>
+                        <div class="module-card-icon executive-icon">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div class="module-card-content">
+                            <div class="module-card-header">
+                                <h4>Module A: Executive Summary & Visual Analytics</h4>
+                                <span class="module-tag">Core</span>
+                            </div>
+                            <p>KPI stats overview, status distribution donut chart, and academic category breakdown.</p>
+                        </div>
+                    </label>
+
+                    <!-- Module B -->
+                    <label class="module-card active" for="moduleCatalog">
+                        <div class="module-card-checkbox">
+                            <input type="checkbox" id="moduleCatalog" checked>
+                        </div>
+                        <div class="module-card-icon catalog-icon">
+                            <i class="fa-solid fa-book-open"></i>
+                        </div>
+                        <div class="module-card-content">
+                            <div class="module-card-header">
+                                <h4>Module B: Research Submissions Catalog</h4>
+                                <span class="module-tag">Tabular</span>
+                            </div>
+                            <p>Comprehensive catalog of research submissions with IDs, lead researchers, and approval dates.</p>
+                            
+                            <!-- Catalog Scope Radio Options -->
+                            <div class="catalog-scope-box" onclick="event.stopPropagation()">
+                                <span class="scope-label">Records to include:</span>
+                                <div class="scope-options">
+                                    <label class="scope-radio-label">
+                                        <input type="radio" name="catalogScope" value="filtered" checked>
+                                        <span>Current Filtered View (<strong id="filteredCountBadge">0</strong> files)</span>
+                                    </label>
+                                    <label class="scope-radio-label">
+                                        <input type="radio" name="catalogScope" value="all">
+                                        <span>All Submissions (<strong id="totalCountBadge">0</strong> files)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- Module C -->
+                    <label class="module-card active" for="moduleDownloads">
+                        <div class="module-card-checkbox">
+                            <input type="checkbox" id="moduleDownloads" checked>
+                        </div>
+                        <div class="module-card-icon downloads-icon">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <div class="module-card-content">
+                            <div class="module-card-header">
+                                <h4>Module C: Readership & Physical QR Scan Audit</h4>
+                                <span class="module-tag">Audit</span>
+                            </div>
+                            <p>Download volume metrics, top accessed research documents, and hard-copy QR scan activity.</p>
+                        </div>
+                    </label>
+
+                    <!-- Module D -->
+                    <label class="module-card active" for="moduleFaculty">
+                        <div class="module-card-checkbox">
+                            <input type="checkbox" id="moduleFaculty" checked>
+                        </div>
+                        <div class="module-card-icon faculty-icon">
+                            <i class="fa-solid fa-users-rectangle"></i>
+                        </div>
+                        <div class="module-card-content">
+                            <div class="module-card-header">
+                                <h4>Module D: Faculty & Department Productivity</h4>
+                                <span class="module-tag">Analytics</span>
+                            </div>
+                            <p>Submissions and approval rates grouped by academic department/strand with author metrics.</p>
+                        </div>
+                </div>
+
+                <div id="exportModalAlert" class="export-alert" style="display: none;"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="cancelExportBtn" class="btn-secondary">Cancel</button>
+                <button type="button" id="generatePdfBtn" class="btn-primary-pdf">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Generate & Download PDF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="supabase-client.js"></script>
     <script src="auth-guard.js"></script>
+    <script src="admin-pdf-generator.js"></script>
     <script src="admin-reports.js"></script>
 
 </body>
