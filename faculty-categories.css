@@ -17,6 +17,8 @@
     --rejected-gray: #cbd5e1;
     --background: #d9ffd9;
     --border-color: #bfe8cc;
+    --sidebar-bg: #adffb6;
+    --sidebar-border: #8ee29a;
     --card-bg: #ffffff;
     --text-dark: #16261d;
     --text-gray: #65776d;
@@ -59,8 +61,8 @@ textarea {
     width: 255px;
     height: 100vh;
     padding: 30px 20px 20px;
-    background-color: #ffffff;
-    border-right: 1px solid var(--border-color);
+    background-color: var(--sidebar-bg, #adffb6);
+    border-right: 1px solid var(--sidebar-border, #8ee29a);
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -104,7 +106,8 @@ textarea {
     width: 44px;
     height: 44px;
     color: var(--dark-green);
-    border: 2px solid #a2d2b5;
+    border: 2px solid #1f9254;
+    background-color: rgba(255, 255, 255, 0.65);
     border-radius: 50%;
     display: flex;
     justify-content: center;
@@ -123,7 +126,7 @@ textarea {
 }
 
 .profile-information h1 {
-    color: #1e293b;
+    color: #0f3d1f;
     font-size: 15px;
     font-weight: 700;
     line-height: 1.25;
@@ -133,7 +136,7 @@ textarea {
 }
 
 .profile-information p {
-    color: #949ba2;
+    color: #27613a;
     font-size: 11.5px;
 }
 
@@ -147,9 +150,9 @@ textarea {
     width: 100%;
     min-height: 45px;
     padding: 0 15px;
-    color: #4d555d;
+    color: #174a27;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     text-decoration: none;
     border-radius: 7px;
     display: flex;
@@ -160,14 +163,14 @@ textarea {
 
 .sidebar-nav a i {
     width: 20px;
-    color: #68737d;
+    color: #206134;
     font-size: 16px;
     text-align: center;
 }
 
 .sidebar-nav a:hover {
-    color: var(--dark-green);
-    background-color: var(--light-green);
+    color: #0b3617;
+    background-color: rgba(255, 255, 255, 0.45);
 }
 
 .sidebar-nav a.active {
@@ -185,10 +188,10 @@ textarea {
     min-height: 45px;
     padding: 0 15px;
     margin-top: auto;
-    color: #64707b;
+    color: #206134;
     background: none;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     border: none;
     border-radius: 7px;
     cursor: pointer;
@@ -454,7 +457,7 @@ textarea {
 }
 
 .category-card-body h3 {
-    color: #1e293b;
+    color: #0f3d1f;
     font-size: 15px;
     font-weight: 700;
     margin-bottom: 6px;
