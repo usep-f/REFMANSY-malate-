@@ -29,7 +29,7 @@ async function initializePage() {
 async function loadRejectedFiles() {
     try {
         if (rejectedFilesTable) {
-            rejectedFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading rejected files...</td></tr>`;
+            rejectedFilesTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading rejected files...</td></tr>`;
         }
 
         const [allFiles, categories] = await Promise.all([
@@ -45,7 +45,7 @@ async function loadRejectedFiles() {
     } catch (err) {
         console.error("Error loading rejected files:", err);
         if (rejectedFilesTable) {
-            rejectedFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+            rejectedFilesTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
         }
     }
 }

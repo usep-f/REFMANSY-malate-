@@ -375,6 +375,13 @@ const refmansyApi = {
             };
 
             if (newFileObj) {
+                // Fetch previous file path so we can clean it up after upload
+                const { data: oldFile } = await supabaseClient
+                    .from("research_files")
+                    .select("file_path")
+                    .eq("id", fileId)
+                    .maybeSingle();
+
                 const user = (await supabaseClient.auth.getUser()).data.user;
                 const cleanFileName = newFileObj.name.replace(/[^a-zA-Z0-9.-]/g, "_");
                 const path = `${user.id}/${Date.now()}_${cleanFileName}`;
@@ -384,6 +391,15 @@ const refmansyApi = {
                     .upload(path, newFileObj, { upsert: true });
 
                 if (uploadError) throw uploadError;
+
+                // Delete previous file from storage to avoid orphaned files
+                if (oldFile?.file_path && oldFile.file_path !== path) {
+                    try {
+                        await supabaseClient.storage.from(STORAGE_BUCKET).remove([oldFile.file_path]);
+                    } catch (removeErr) {
+                        console.warn("Could not remove old file from storage:", removeErr);
+                    }
+                }
 
                 updates.file_path = path;
                 updates.file_name = newFileObj.name;
@@ -623,6 +639,67 @@ const refmansyApi = {
 
             if (error) throw error;
             return normalizeUserProfile(data);
+        },
+
+        async deleteUser(userId) {
+            const { data, error } = await supabaseClient.rpc("admin_delete_user", {
+                target_user_id: userId
+            });
+
+            if (error) throw error;
+            return true;
+        },
+
+        async createUser(email, password, { fullname, username, role, status = "active" }) {
+            // Check if username or email already exists in profiles
+            const { data: existingUser } = await supabaseClient
+                .from("profiles")
+                .select("id, username, email")
+                .or(`username.ilike.${username.trim()},email.ilike.${email.trim()}`)
+                .maybeSingle();
+
+            if (existingUser) {
+                if (existingUser.username.toLowerCase() === username.trim().toLowerCase()) {
+                    throw new Error("This username is already registered.");
+                }
+                if (existingUser.email.toLowerCase() === email.trim().toLowerCase()) {
+                    throw new Error("This email is already registered.");
+                }
+            }
+
+            // Create isolated client without session persistence to prevent overwriting active admin session
+            const isolatedClient = (typeof supabase !== "undefined" && supabase.createClient)
+                ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })
+                : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+
+            const { data, error } = await isolatedClient.auth.signUp({
+                email: email.trim(),
+                password: password,
+                options: {
+                    data: {
+                        full_name: fullname.trim(),
+                        fullname: fullname.trim(),
+                        username: username.trim(),
+                        role: role
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            if (data?.user?.id) {
+                await supabaseClient.from("profiles").upsert({
+                    id: data.user.id,
+                    full_name: fullname.trim(),
+                    username: username.trim(),
+                    email: email.trim(),
+                    role: role,
+                    status: status || "active",
+                    updated_at: new Date().toISOString()
+                }, { onConflict: "id" });
+            }
+
+            return data;
         }
     },
 
@@ -680,26 +757,47 @@ const refmansyApi = {
     // Feedback Services
     // -------------------------------------------------------------
     feedback: {
-        async submitFeedback({ subject, message, rating }) {
+        async submitFeedback({ type, subject, message, rating }) {
             const user = (await supabaseClient.auth.getUser()).data.user;
             const profile = (await refmansyApi.auth.getCurrentUser())?.profile;
+            const normalizedType = (type || "general").toLowerCase().trim();
 
-            const { data, error } = await supabaseClient
-                .from("feedback")
-                .insert({
-                    user_id: user ? user.id : null,
-                    user_name: profile?.full_name || profile?.username || "Faculty Member",
-                    user_email: user?.email || "",
-                    subject: subject.trim(),
-                    message: message.trim(),
-                    rating: rating ? parseInt(rating) : null,
-                    status: "new"
-                })
-                .select()
-                .single();
+            const insertPayload = {
+                user_id: user ? user.id : null,
+                user_name: profile?.full_name || profile?.username || "Faculty Member",
+                user_email: user?.email || "",
+                type: normalizedType,
+                subject: subject.trim(),
+                message: message.trim(),
+                rating: rating ? parseInt(rating) : null,
+                status: "new"
+            };
 
-            if (error) throw error;
-            return data;
+            // Attempt insert with 'type' column, fallback gracefully if schema not yet migrated
+            try {
+                const { data, error } = await supabaseClient
+                    .from("feedback")
+                    .insert(insertPayload)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return data;
+            } catch (err) {
+                // If the column 'type' does not exist yet on legacy schemas, retry without it
+                if (err.message && err.message.includes("type")) {
+                    console.warn("Retrying feedback insert without 'type' column for legacy database compatibility...");
+                    delete insertPayload.type;
+                    const { data, error } = await supabaseClient
+                        .from("feedback")
+                        .insert(insertPayload)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return data;
+                }
+                throw err;
+            }
         },
 
         async getMyFeedback(userId) {
@@ -724,11 +822,65 @@ const refmansyApi = {
         },
 
         async replyFeedback(id, adminReply, status = "resolved") {
+            let normalizedStatus = (status || "resolved").toLowerCase().trim();
+            if (normalizedStatus === "in-progress") {
+                normalizedStatus = "in_progress";
+            }
+
+            const adminUser = (await supabaseClient.auth.getUser()).data?.user;
+            const adminProfile = (await refmansyApi.auth.getCurrentUser())?.profile;
+
+            const updatePayload = {
+                admin_reply: adminReply.trim(),
+                status: normalizedStatus,
+                updated_at: new Date().toISOString()
+            };
+
+            if (adminUser?.id) {
+                updatePayload.admin_id = adminUser.id;
+            }
+            if (adminProfile?.full_name || adminProfile?.username) {
+                updatePayload.admin_name = adminProfile.full_name || adminProfile.username;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from("feedback")
+                    .update(updatePayload)
+                    .eq("id", id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return data;
+            } catch (err) {
+                // If admin_id / admin_name do not exist yet on legacy schema, retry without them
+                if (err.message && (err.message.includes("admin_id") || err.message.includes("admin_name"))) {
+                    delete updatePayload.admin_id;
+                    delete updatePayload.admin_name;
+                    const { data, error } = await supabaseClient
+                        .from("feedback")
+                        .update(updatePayload)
+                        .eq("id", id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return data;
+                }
+                throw err;
+            }
+        },
+
+        async updateStatus(id, status) {
+            let normalizedStatus = (status || "new").toLowerCase().trim();
+            if (normalizedStatus === "in-progress") {
+                normalizedStatus = "in_progress";
+            }
+
             const { data, error } = await supabaseClient
                 .from("feedback")
                 .update({
-                    admin_reply: adminReply.trim(),
-                    status: status,
+                    status: normalizedStatus,
                     updated_at: new Date().toISOString()
                 })
                 .eq("id", id)
@@ -739,19 +891,14 @@ const refmansyApi = {
             return data;
         },
 
-        async updateStatus(id, status) {
-            const { data, error } = await supabaseClient
+        async deleteFeedback(id) {
+            const { error } = await supabaseClient
                 .from("feedback")
-                .update({
-                    status: status,
-                    updated_at: new Date().toISOString()
-                })
-                .eq("id", id)
-                .select()
-                .single();
+                .delete()
+                .eq("id", id);
 
             if (error) throw error;
-            return data;
+            return true;
         }
     }
 };

@@ -31,7 +31,7 @@ async function initializePage() {
 async function loadPageData() {
     try {
         if (downloadFilesTable) {
-            downloadFilesTable.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available files...</td></tr>`;
+            downloadFilesTable.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available files...</td></tr>`;
         }
         if (downloadHistoryTable) {
             downloadHistoryTable.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading download history...</td></tr>`;

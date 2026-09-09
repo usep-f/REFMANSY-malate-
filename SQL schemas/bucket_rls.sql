@@ -18,18 +18,30 @@ using (
     bucket_id = 'research-documents'
 );
 
--- 3. Allow users to update/overwrite files in research-documents
-create policy "Allow authenticated updates"
+-- 3. Allow owner or admin to update/overwrite files in research-documents
+drop policy if exists "Allow authenticated updates" on storage.objects;
+drop policy if exists "Allow owner or admin update storage objects" on storage.objects;
+create policy "Allow owner or admin update storage objects"
 on storage.objects for update
 to authenticated
 using (
     bucket_id = 'research-documents'
+    and (
+        (storage.foldername(name))[1] = auth.uid()::text
+        or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    )
 );
 
--- 4. Allow users/admins to delete files in research-documents
-create policy "Allow authenticated deletes"
+-- 4. Allow owner or admin to delete files in research-documents
+drop policy if exists "Allow authenticated deletes" on storage.objects;
+drop policy if exists "Allow owner or admin delete storage objects" on storage.objects;
+create policy "Allow owner or admin delete storage objects"
 on storage.objects for delete
 to authenticated
 using (
     bucket_id = 'research-documents'
+    and (
+        (storage.foldername(name))[1] = auth.uid()::text
+        or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+    )
 );

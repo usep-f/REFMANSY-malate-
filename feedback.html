@@ -210,7 +210,7 @@
                     <select id="statusFilter">
                         <option value="all">All Statuses</option>
                         <option value="new">New</option>
-                        <option value="in-progress">In Progress</option>
+                        <option value="in_progress">In Progress</option>
                         <option value="resolved">Resolved</option>
                     </select>
 
@@ -320,7 +320,7 @@
 
                     <select id="feedbackStatus">
                         <option value="new">New</option>
-                        <option value="in-progress">In Progress</option>
+                        <option value="in_progress">In Progress</option>
                         <option value="resolved">Resolved</option>
                     </select>
                 </div>
@@ -330,6 +330,15 @@
             <p id="modalMessageBox" class="form-message"></p>
 
             <div class="modal-actions">
+
+                <button
+                    type="button"
+                    id="deleteFeedbackButton"
+                    class="cancel-button"
+                    style="background-color: #ef4444; border-color: #ef4444; color: #fff; margin-right: auto;"
+                >
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
 
                 <button
                     type="button"

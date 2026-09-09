@@ -72,14 +72,18 @@ create table if not exists public.feedback (
     user_id uuid references public.profiles(id) on delete set null,
     user_name text,
     user_email text,
+    type text not null default 'general',
     subject text not null,
     message text not null,
     rating integer,
     status text not null default 'new' check (status in ('new', 'in_progress', 'resolved')),
     admin_reply text,
+    admin_id uuid references public.profiles(id) on delete set null,
+    admin_name text,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
 
 -- 7. Seed Default Categories
 insert into public.categories (name, description) values
@@ -128,9 +132,33 @@ alter table public.research_files enable row level security;
 alter table public.download_records enable row level security;
 alter table public.feedback enable row level security;
 
--- Profiles: Authenticated users can read all profiles; users can update own profile
+-- Helper function to check admin role safely
+create or replace function public.is_admin()
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+end;
+$$;
+
+-- Profiles: Authenticated users can read all profiles; users can update own profile; admins can update/delete
 create policy "Allow read profiles" on public.profiles for select to authenticated using (true);
-create policy "Allow user update self" on public.profiles for update to authenticated using (auth.uid() = id);
+create policy "Allow insert own profile" on public.profiles for insert to authenticated with check (auth.uid() = id);
+create policy "Allow user update self" on public.profiles for update to authenticated 
+using (auth.uid() = id)
+with check (
+    auth.uid() = id
+    and role = (select p.role from public.profiles p where p.id = auth.uid())
+    and status = (select p.status from public.profiles p where p.id = auth.uid())
+);
+create policy "Allow admin update profiles" on public.profiles for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "Allow admin delete profiles" on public.profiles for delete to authenticated using (public.is_admin());
 
 -- Categories & Tags: Authenticated users can read; admins can insert/update/delete
 create policy "Allow read categories" on public.categories for select to authenticated using (true);
@@ -154,8 +182,13 @@ create policy "Allow faculty insert own research" on public.research_files for i
     owner_id = auth.uid()
 );
 
-create policy "Allow faculty update own pending research" on public.research_files for update to authenticated using (
-    (owner_id = auth.uid() and status = 'pending')
+create policy "Allow faculty update own pending or rejected research" on public.research_files for update to authenticated 
+using (
+    (owner_id = auth.uid() and status in ('pending', 'rejected'))
+    or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+)
+with check (
+    (owner_id = auth.uid() and status in ('pending', 'rejected'))
     or exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
 );
 
@@ -184,3 +217,31 @@ create policy "Allow insert feedback" on public.feedback for insert to authentic
 create policy "Allow admin update feedback" on public.feedback for update to authenticated using (
     exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
 );
+create policy "Allow admin delete feedback" on public.feedback for delete to authenticated using (
+    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+
+-- 10. Admin User Account Deletion Function (RPC)
+create or replace function public.admin_delete_user(target_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Access denied: Only administrators can delete user accounts.';
+  end if;
+
+  if auth.uid() = target_user_id then
+    raise exception 'Self-deletion is not permitted. An admin cannot delete their own account.';
+  end if;
+
+  delete from auth.users where id = target_user_id;
+  delete from public.profiles where id = target_user_id;
+end;
+$$;
+
+revoke execute on function public.admin_delete_user(uuid) from public;
+grant execute on function public.admin_delete_user(uuid) to authenticated;
+

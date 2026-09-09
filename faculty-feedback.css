@@ -457,6 +457,12 @@ textarea {
     background-color: #e1f3e9;
 }
 
+.form-message.info {
+    display: block;
+    color: #1e40af;
+    background-color: #dbeafe;
+}
+
 /* Information card */
 
 .information-card {

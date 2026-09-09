@@ -35,17 +35,6 @@
 
         async init(requiredRole, callback) {
             try {
-                if (window.location.search.includes("preview=true") || window.location.hash.includes("preview")) {
-                    this.currentUser = { email: "admin@lcnhs.edu.ph" };
-                    this.profile = { firstName: "Admin", lastName: "Officer", role: requiredRole || "admin", department: "Research Department" };
-                    this.updateHeaderName(this.profile);
-                    this.setupLogoutButtons();
-                    if (typeof callback === "function") {
-                        callback(this.profile, this.currentUser);
-                    }
-                    return;
-                }
-
                 if (!window.refmansyApi) {
                     console.error("refmansyApi not found. Please include supabase-client.js before auth-guard.js");
                     return;
@@ -76,8 +65,9 @@
                     return;
                 }
 
-                // Check role restrictions
-                const targetRole = requiredRole || (isAdminPage ? "admin" : (isFacultyPage ? "faculty" : null));
+                // Check role restrictions (allow shared search pages for all authenticated roles)
+                const isSharedPage = path.includes("search-files.html");
+                const targetRole = isSharedPage ? null : (requiredRole || (isAdminPage ? "admin" : (isFacultyPage ? "faculty" : null)));
 
                 if (targetRole && profile.role !== targetRole) {
                     console.warn(`Role mismatch: expected ${targetRole}, found ${profile.role}`);
@@ -94,6 +84,9 @@
 
                 // Setup global logout buttons
                 this.setupLogoutButtons();
+
+                // Setup global navigation helpers
+                this.setupGlobalNav();
 
                 // Run page specific callback
                 if (typeof callback === "function") {
@@ -133,6 +126,15 @@
                             await window.refmansyApi.auth.signOut();
                         }
                     });
+                }
+            });
+        },
+
+        setupGlobalNav() {
+            document.addEventListener("click", function (e) {
+                const link = e.target.closest('a[href*="upload-research.html"]');
+                if (link && !link.closest(".modal-actions") && !link.classList.contains("edit-btn") && link.id !== "cancelUploadBtn") {
+                    localStorage.removeItem("refmansyEditFileId");
                 }
             });
         }

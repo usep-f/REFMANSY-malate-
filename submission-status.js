@@ -125,10 +125,32 @@ function renderSubmissions(files) {
                 <button type="button" class="btn-card view-details-btn">
                     <i class="fa-regular fa-eye"></i> View Timeline & Details
                 </button>
+                ${
+                    (file.status === "pending" || file.status === "rejected")
+                        ? `<button type="button" class="btn-card delete-card-btn" title="Delete Submission" style="background-color: #ef4444; color: white; margin-left: 6px; padding: 0.5rem 0.75rem;">
+                            <i class="fa-solid fa-trash"></i>
+                           </button>`
+                        : ""
+                }
             </div>
         `;
 
         card.querySelector(".view-details-btn").addEventListener("click", () => openModal(file));
+
+        const delCardBtn = card.querySelector(".delete-card-btn");
+        if (delCardBtn) {
+            delCardBtn.addEventListener("click", async () => {
+                if (confirm(`Are you sure you want to delete "${file.title}"? This cannot be undone.`)) {
+                    try {
+                        await window.refmansyApi.research.deleteFile(file.id);
+                        await loadSubmissions();
+                    } catch (err) {
+                        alert("Failed to delete submission: " + (err.message || err));
+                    }
+                }
+            });
+        }
+
         submissionList.appendChild(card);
     });
 }
@@ -149,6 +171,22 @@ function setupModal() {
             if (selectedSubmission) {
                 localStorage.setItem("refmansyEditFileId", selectedSubmission.id);
                 window.location.href = "upload-research.html";
+            }
+        });
+    }
+
+    const delBtn = document.getElementById("deleteSubmissionButton");
+    if (delBtn) {
+        delBtn.addEventListener("click", async function () {
+            if (!selectedSubmission) return;
+            if (confirm(`Are you sure you want to delete "${selectedSubmission.title}"? This cannot be undone.`)) {
+                try {
+                    await window.refmansyApi.research.deleteFile(selectedSubmission.id);
+                    closeModal();
+                    await loadSubmissions();
+                } catch (err) {
+                    alert("Failed to delete submission: " + (err.message || err));
+                }
             }
         });
     }
@@ -196,6 +234,15 @@ function openModal(file) {
             editBtn.style.display = "inline-flex";
         } else {
             editBtn.style.display = "none";
+        }
+    }
+
+    const delBtn = document.getElementById("deleteSubmissionButton");
+    if (delBtn) {
+        if (file.status === "pending" || file.status === "rejected") {
+            delBtn.style.display = "inline-flex";
+        } else {
+            delBtn.style.display = "none";
         }
     }
 

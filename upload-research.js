@@ -204,6 +204,13 @@ async function checkEditMode() {
 function setupForm() {
     if (!researchForm) return;
 
+    const cancelBtn = document.getElementById("cancelUploadBtn");
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", function () {
+            localStorage.removeItem("refmansyEditFileId");
+        });
+    }
+
     researchForm.addEventListener("submit", async function (event) {
         event.preventDefault();
 

@@ -677,6 +677,12 @@ tbody tr:hover {
     background-color: #e1f3e9;
 }
 
+.form-message.info {
+    display: block;
+    color: #1e40af;
+    background-color: #dbeafe;
+}
+
 .modal-actions {
     padding-top: 20px;
     margin-top: 20px;

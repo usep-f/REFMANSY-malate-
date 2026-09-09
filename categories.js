@@ -36,7 +36,7 @@ async function initializePage() {
 async function loadData() {
     try {
         if (categoriesTable) {
-            categoriesTable.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading categories...</td></tr>`;
+            categoriesTable.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading categories...</td></tr>`;
         }
 
         const [cats, tgs, files] = await Promise.all([
@@ -88,7 +88,7 @@ function renderCategories(list) {
     categoriesTable.innerHTML = "";
 
     if (!list || list.length === 0) {
-        categoriesTable.innerHTML = `<tr><td colspan="4" class="empty-table">No categories found.</td></tr>`;
+        categoriesTable.innerHTML = `<tr><td colspan="5" class="empty-table">No categories found.</td></tr>`;
         return;
     }
 

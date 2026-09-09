@@ -600,6 +600,20 @@ tbody tr:hover {
     border-color: #d97706;
 }
 
+.table-actions .delete-user-btn,
+.delete-button {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+}
+
+.table-actions .delete-user-btn:hover,
+.delete-button:hover {
+    color: #ffffff;
+    background-color: #dc2626;
+    border-color: #dc2626;
+}
+
 .table-footer {
     padding-top: 17px;
 }

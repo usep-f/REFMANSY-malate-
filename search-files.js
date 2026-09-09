@@ -18,8 +18,8 @@ const researchResults = document.getElementById("researchResults");
 const detailsModal = document.getElementById("detailsModal");
 const resultCount = document.getElementById("resultCount");
 
-// Auth Guard
-window.refmansyAuthGuard.init("faculty", function (profile, user) {
+// Auth Guard (Accessible to both faculty and admin)
+window.refmansyAuthGuard.init(null, function (profile, user) {
     currentUser = user;
     currentProfile = profile;
     initializePage();

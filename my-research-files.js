@@ -30,7 +30,7 @@ async function initializePage() {
 async function loadFacultyFiles() {
     try {
         if (researchFilesTable) {
-            researchFilesTable.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading research files...</td></tr>`;
+            researchFilesTable.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading research files...</td></tr>`;
         }
 
         facultyFiles = await window.refmansyApi.research.getMyFiles(currentProfile.id);
@@ -41,7 +41,7 @@ async function loadFacultyFiles() {
     } catch (err) {
         console.error("Error loading faculty files:", err);
         if (researchFilesTable) {
-            researchFilesTable.innerHTML = `<tr><td colspan="6" style="text-align:center; color: red; padding: 2rem;">Error loading files: ${err.message}</td></tr>`;
+            researchFilesTable.innerHTML = `<tr><td colspan="7" style="text-align:center; color: red; padding: 2rem;">Error loading files: ${err.message}</td></tr>`;
         }
     }
 }
@@ -150,6 +150,13 @@ function renderTable(files) {
                                </button>`
                             : ""
                     }
+                    ${
+                        (file.status === "pending" || file.status === "rejected")
+                            ? `<button type="button" class="view-button delete-row-btn" title="Delete Submission" style="background-color: #ef4444; margin-left: 5px;">
+                                <i class="fa-solid fa-trash"></i>
+                               </button>`
+                            : ""
+                    }
                 </div>
             </td>
         `;
@@ -160,6 +167,20 @@ function renderTable(files) {
         if (dlBtn) {
             dlBtn.addEventListener("click", async () => {
                 await window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
+            });
+        }
+
+        const delRowBtn = row.querySelector(".delete-row-btn");
+        if (delRowBtn) {
+            delRowBtn.addEventListener("click", async () => {
+                if (confirm(`Are you sure you want to delete "${file.title}"? This cannot be undone.`)) {
+                    try {
+                        await window.refmansyApi.research.deleteFile(file.id);
+                        await loadResearchFiles();
+                    } catch (err) {
+                        alert("Failed to delete research file: " + (err.message || err));
+                    }
+                }
             });
         }
 
@@ -193,6 +214,22 @@ function setupModal() {
             if (selectedFile) {
                 localStorage.setItem("refmansyEditFileId", selectedFile.id);
                 window.location.href = "upload-research.html";
+            }
+        });
+    }
+
+    const delBtn = document.getElementById("deleteFileButton");
+    if (delBtn) {
+        delBtn.addEventListener("click", async function () {
+            if (!selectedFile) return;
+            if (confirm(`Are you sure you want to delete "${selectedFile.title}"? This cannot be undone.`)) {
+                try {
+                    await window.refmansyApi.research.deleteFile(selectedFile.id);
+                    closeModal();
+                    await loadResearchFiles();
+                } catch (err) {
+                    alert("Failed to delete research file: " + (err.message || err));
+                }
             }
         });
     }
@@ -233,6 +270,15 @@ function openModal(file) {
             editBtn.style.display = "inline-flex";
         } else {
             editBtn.style.display = "none";
+        }
+    }
+
+    const delBtn = document.getElementById("deleteFileButton");
+    if (delBtn) {
+        if (file.status === "pending" || file.status === "rejected") {
+            delBtn.style.display = "inline-flex";
+        } else {
+            delBtn.style.display = "none";
         }
     }
 

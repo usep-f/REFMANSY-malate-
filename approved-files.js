@@ -29,7 +29,7 @@ async function initializePage() {
 async function loadApprovedFiles() {
     try {
         if (approvedFilesTable) {
-            approvedFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading approved files...</td></tr>`;
+            approvedFilesTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading approved files...</td></tr>`;
         }
 
         const [allFiles, categories] = await Promise.all([
@@ -45,7 +45,7 @@ async function loadApprovedFiles() {
     } catch (err) {
         console.error("Error loading approved files:", err);
         if (approvedFilesTable) {
-            approvedFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+            approvedFilesTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
         }
     }
 }

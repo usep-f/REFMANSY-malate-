@@ -14,6 +14,7 @@ const feedbackTable = document.getElementById("feedbackTable");
 const feedbackModal = document.getElementById("feedbackModal");
 const adminResponse = document.getElementById("adminResponse");
 const feedbackStatus = document.getElementById("feedbackStatus");
+const modalMessageBox = document.getElementById("modalMessageBox");
 const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
@@ -32,7 +33,7 @@ async function initializePage() {
 async function loadFeedback() {
     try {
         if (feedbackTable) {
-            feedbackTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback inquiries...</td></tr>`;
+            feedbackTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading feedback inquiries...</td></tr>`;
         }
 
         feedbackList = await window.refmansyApi.feedback.getAllFeedback();
@@ -42,7 +43,7 @@ async function loadFeedback() {
     } catch (err) {
         console.error("Error loading feedback list:", err);
         if (feedbackTable) {
-            feedbackTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+            feedbackTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #dc2626; padding: 2rem;">Error loading feedback: ${err.message}</td></tr>`;
         }
     }
 }
@@ -50,7 +51,7 @@ async function loadFeedback() {
 function updateSummary() {
     const total = feedbackList.length;
     const newCount = feedbackList.filter(f => f.status === "new").length;
-    const inProgressCount = feedbackList.filter(f => f.status === "in_progress").length;
+    const inProgressCount = feedbackList.filter(f => f.status === "in_progress" || f.status === "in-progress").length;
     const resolvedCount = feedbackList.filter(f => f.status === "resolved").length;
 
     const totalEl = document.getElementById("totalFeedback");
@@ -74,19 +75,33 @@ function setupFilters() {
 
 function filterFeedback() {
     const term = (searchInput?.value || "").trim().toLowerCase();
-    const stat = (statusFilter?.value || "all").toLowerCase();
+    const selectedType = (typeFilter?.value || "all").toLowerCase();
+    const selectedStat = (statusFilter?.value || "all").toLowerCase();
 
     const filtered = feedbackList.filter(fb => {
         const matchesTerm =
             !term ||
             (fb.user_name && fb.user_name.toLowerCase().includes(term)) ||
             (fb.user_email && fb.user_email.toLowerCase().includes(term)) ||
-            fb.subject.toLowerCase().includes(term) ||
-            fb.message.toLowerCase().includes(term);
+            (fb.subject && fb.subject.toLowerCase().includes(term)) ||
+            (fb.message && fb.message.toLowerCase().includes(term)) ||
+            (fb.type && fb.type.toLowerCase().includes(term));
 
-        const matchesStat = stat === "all" || fb.status === stat;
+        const matchesType =
+            selectedType === "all" ||
+            (fb.type && fb.type.toLowerCase() === selectedType) ||
+            (!fb.type && selectedType === "general");
 
-        return matchesTerm && matchesStat;
+        let matchesStat = true;
+        if (selectedStat === "new") {
+            matchesStat = fb.status === "new";
+        } else if (selectedStat === "in_progress" || selectedStat === "in-progress") {
+            matchesStat = fb.status === "in_progress" || fb.status === "in-progress";
+        } else if (selectedStat === "resolved") {
+            matchesStat = fb.status === "resolved";
+        }
+
+        return matchesTerm && matchesType && matchesStat;
     });
 
     if (resultCount) {
@@ -101,7 +116,7 @@ function renderTable(list) {
     feedbackTable.innerHTML = "";
 
     if (!list || list.length === 0) {
-        feedbackTable.innerHTML = `<tr><td colspan="6" class="empty-table">No feedback messages found.</td></tr>`;
+        feedbackTable.innerHTML = `<tr><td colspan="7" class="empty-table">No feedback messages found.</td></tr>`;
         return;
     }
 
@@ -110,12 +125,20 @@ function renderTable(list) {
         const displayId = "FB-" + String(index + 1).padStart(4, "0");
         const dateStr = fb.created_at ? new Date(fb.created_at).toLocaleDateString() : "N/A";
 
-        const statusBadge =
-            fb.status === "resolved"
-                ? `<span class="badge-resolved"><i class="fa-solid fa-circle-check"></i> Resolved</span>`
-                : fb.status === "in_progress"
-                ? `<span class="badge-progress"><i class="fa-solid fa-spinner"></i> In Progress</span>`
-                : `<span class="badge-new"><i class="fa-solid fa-bell"></i> New</span>`;
+        const rawType = (fb.type || "general").toLowerCase();
+        const formattedType = formatTypeLabel(rawType);
+        const typeBadge = `<span class="feedback-type type-${rawType}">${escapeHtml(formattedType)}</span>`;
+
+        let statusClass = "status-new";
+        let statusText = "New";
+        if (fb.status === "resolved") {
+            statusClass = "status-resolved";
+            statusText = "Resolved";
+        } else if (fb.status === "in_progress" || fb.status === "in-progress") {
+            statusClass = "status-in-progress";
+            statusText = "In Progress";
+        }
+        const statusBadge = `<span class="status-label ${statusClass}">${statusText}</span>`;
 
         row.innerHTML = `
             <td><strong>${displayId}</strong></td>
@@ -123,18 +146,38 @@ function renderTable(list) {
                 <strong>${escapeHtml(fb.user_name || "Faculty")}</strong>
                 <br><small style="color: #64748b;">${escapeHtml(fb.user_email || "")}</small>
             </td>
-            <td>${escapeHtml(fb.type || "General Inquiry")}</td>
+            <td>${typeBadge}</td>
             <td>${escapeHtml(fb.subject)}</td>
             <td>${dateStr}</td>
             <td>${statusBadge}</td>
             <td>
-                <button type="button" class="btn-action view-btn" title="View & Reply">
-                    <i class="fa-regular fa-comment-dots"></i> View / Reply
-                </button>
+                <div class="table-actions">
+                    <button type="button" class="btn-action view-btn" title="View & Reply">
+                        <i class="fa-regular fa-comment-dots"></i> View / Reply
+                    </button>
+                    <button type="button" class="btn-action delete-fb-btn" title="Delete Feedback" style="background-color: #ef4444; color: #fff; margin-left: 5px;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
             </td>
         `;
 
         row.querySelector(".view-btn").addEventListener("click", () => openModal(fb));
+
+        const delRowBtn = row.querySelector(".delete-fb-btn");
+        if (delRowBtn) {
+            delRowBtn.addEventListener("click", async () => {
+                if (confirm(`Are you sure you want to delete this feedback message from "${fb.user_name || 'Faculty'}"?`)) {
+                    try {
+                        await window.refmansyApi.feedback.deleteFeedback(fb.id);
+                        await loadFeedback();
+                    } catch (err) {
+                        alert("Failed to delete feedback: " + (err.message || err));
+                    }
+                }
+            });
+        }
+
         feedbackTable.appendChild(row);
     });
 }
@@ -154,6 +197,22 @@ function setupModal() {
 
     const saveBtn = document.getElementById("saveResponseButton");
     if (saveBtn) saveBtn.addEventListener("click", saveResponse);
+
+    const delModalBtn = document.getElementById("deleteFeedbackButton");
+    if (delModalBtn) {
+        delModalBtn.addEventListener("click", async function () {
+            if (!selectedFeedback) return;
+            if (confirm(`Are you sure you want to delete this feedback message from "${selectedFeedback.user_name || 'Faculty'}"?`)) {
+                try {
+                    await window.refmansyApi.feedback.deleteFeedback(selectedFeedback.id);
+                    closeModal();
+                    await loadFeedback();
+                } catch (err) {
+                    alert("Failed to delete feedback: " + (err.message || err));
+                }
+            }
+        });
+    }
 }
 
 function openModal(fb) {
@@ -166,14 +225,23 @@ function openModal(fb) {
     const mUser = document.getElementById("modalUser");
     if (mUser) mUser.textContent = `${fb.user_name || "Faculty"} (${fb.user_email || ""})`;
     const mType = document.getElementById("modalType");
-    if (mType) mType.textContent = "General Inquiry";
+    if (mType) mType.textContent = formatTypeLabel(fb.type || "general");
     const mSubj = document.getElementById("modalSubject");
     if (mSubj) mSubj.textContent = fb.subject;
     const mMsg = document.getElementById("modalMessage");
     if (mMsg) mMsg.textContent = fb.message;
 
     if (adminResponse) adminResponse.value = fb.admin_reply || "";
-    if (feedbackStatus) feedbackStatus.value = fb.status || "new";
+
+    if (feedbackStatus) {
+        const safeStatus = (fb.status === "in-progress") ? "in_progress" : (fb.status || "new");
+        feedbackStatus.value = safeStatus;
+    }
+
+    if (modalMessageBox) {
+        modalMessageBox.textContent = "";
+        modalMessageBox.className = "form-message";
+    }
 
     if (feedbackModal) feedbackModal.classList.add("active");
 }
@@ -187,7 +255,11 @@ async function saveResponse() {
     if (!selectedFeedback) return;
 
     const reply = (adminResponse?.value || "").trim();
-    const status = feedbackStatus?.value || "resolved";
+    let status = feedbackStatus?.value || "resolved";
+    if (status === "in-progress") {
+        status = "in_progress";
+    }
+
     const saveBtn = document.getElementById("saveResponseButton");
 
     try {
@@ -198,16 +270,43 @@ async function saveResponse() {
 
         await window.refmansyApi.feedback.replyFeedback(selectedFeedback.id, reply, status);
 
-        closeModal();
+        if (modalMessageBox) {
+            modalMessageBox.textContent = "Response saved successfully!";
+            modalMessageBox.className = "form-message success";
+        }
+
         await loadFeedback();
+
+        setTimeout(() => {
+            closeModal();
+        }, 600);
     } catch (err) {
         console.error("Save reply error:", err);
-        alert("Failed to save response: " + err.message);
+        if (modalMessageBox) {
+            modalMessageBox.textContent = "Failed to save response: " + (err.message || "Unknown error");
+            modalMessageBox.className = "form-message error";
+        } else {
+            alert("Failed to save response: " + err.message);
+        }
     } finally {
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Save Response`;
         }
+    }
+}
+
+function formatTypeLabel(type) {
+    switch ((type || "").toLowerCase()) {
+        case "suggestion":
+            return "Suggestion";
+        case "concern":
+            return "Concern";
+        case "technical":
+            return "Technical Issue";
+        case "general":
+        default:
+            return "General Feedback";
     }
 }
 

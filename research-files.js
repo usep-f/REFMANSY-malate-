@@ -154,6 +154,9 @@ function renderTable(files) {
                                </button>`
                             : ""
                     }
+                    <button type="button" class="view-button delete-btn" title="Delete Research File" style="background-color: #ef4444; margin-left: 5px;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
                 </div>
             </td>
         `;
@@ -164,6 +167,20 @@ function renderTable(files) {
         if (dlBtn) {
             dlBtn.addEventListener("click", () => {
                 window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
+            });
+        }
+
+        const deleteRowBtn = row.querySelector(".delete-btn");
+        if (deleteRowBtn) {
+            deleteRowBtn.addEventListener("click", async () => {
+                if (confirm(`Are you sure you want to permanently delete "${file.title}"? This cannot be undone.`)) {
+                    try {
+                        await window.refmansyApi.research.deleteFile(file.id);
+                        await loadResearchFiles();
+                    } catch (err) {
+                        alert("Error deleting file: " + (err.message || err));
+                    }
+                }
             });
         }
 
@@ -203,6 +220,22 @@ function setupModal() {
 
     const pendBtn = document.getElementById("pendingButton");
     if (pendBtn) pendBtn.addEventListener("click", () => updateFileStatus("pending"));
+
+    const delBtn = document.getElementById("deleteResearchButton");
+    if (delBtn) {
+        delBtn.addEventListener("click", async function () {
+            if (!selectedFile) return;
+            if (confirm(`Are you sure you want to permanently delete "${selectedFile.title}"? This cannot be undone.`)) {
+                try {
+                    await window.refmansyApi.research.deleteFile(selectedFile.id);
+                    closeModal();
+                    await loadResearchFiles();
+                } catch (err) {
+                    alert("Error deleting file: " + (err.message || err));
+                }
+            }
+        });
+    }
 }
 
 function openModal(file) {

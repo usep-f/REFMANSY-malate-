@@ -144,8 +144,8 @@ function renderUsersTable(list) {
                     </button>
                     ${
                         !isSelf
-                            ? `<button type="button" class="btn-action toggle-status-btn" title="${user.status === 'active' ? 'Deactivate' : 'Activate'} User">
-                                <i class="fa-solid ${user.status === 'active' ? 'fa-ban' : 'fa-check'}"></i>
+                            ? `<button type="button" class="btn-action delete-user-btn" title="Delete User">
+                                <i class="fa-solid fa-trash"></i>
                                </button>`
                             : ""
                     }
@@ -155,31 +155,35 @@ function renderUsersTable(list) {
 
         row.querySelector(".edit-user-btn").addEventListener("click", () => openEditModal(user));
 
-        const toggleBtn = row.querySelector(".toggle-status-btn");
-        if (toggleBtn) {
-            toggleBtn.addEventListener("click", () => toggleUserStatus(user));
+        const deleteBtn = row.querySelector(".delete-user-btn");
+        if (deleteBtn) {
+            deleteBtn.addEventListener("click", () => deleteUserAccount(user));
         }
 
         usersTable.appendChild(row);
     });
 }
 
-async function toggleUserStatus(user) {
-    const nextStatus = user.status === "active" ? "inactive" : "active";
-    const actionWord = nextStatus === "active" ? "activate" : "deactivate";
+async function deleteUserAccount(user) {
+    if (user.id === currentProfile.id) {
+        alert("You cannot delete your own administrator account.");
+        return;
+    }
 
-    if (!confirm(`Are you sure you want to ${actionWord} the account for ${user.fullname || user.username}?`)) {
+    const userName = user.fullname || user.username;
+    const confirmMessage = `Are you sure you want to permanently delete the account for "${userName}" (@${user.username})?\n\nThis will permanently delete their authentication credentials and database profile. This action cannot be undone.`;
+
+    if (!confirm(confirmMessage)) {
         return;
     }
 
     try {
-        await window.refmansyApi.users.updateStatus(user.id, nextStatus);
-        user.status = nextStatus;
-        updateSummary();
-        filterUsers();
+        await window.refmansyApi.users.deleteUser(user.id);
+        alert(`User account for "${userName}" has been permanently deleted.`);
+        await loadUsers();
     } catch (err) {
-        console.error("Failed to update status:", err);
-        alert("Error updating user status: " + err.message);
+        console.error("Failed to delete user account:", err);
+        alert("Error deleting user account: " + (err.message || "Unknown error occurred."));
     }
 }
 
@@ -285,10 +289,11 @@ function setupForm() {
                     return;
                 }
 
-                await window.refmansyApi.auth.signUp(email, password, {
+                await window.refmansyApi.users.createUser(email, password, {
                     fullname,
                     username,
-                    role
+                    role,
+                    status
                 });
             }
 

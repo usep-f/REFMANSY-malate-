@@ -29,7 +29,7 @@ async function initializePage() {
 async function loadPendingFiles() {
     try {
         if (pendingFilesTable) {
-            pendingFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending submissions...</td></tr>`;
+            pendingFilesTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending submissions...</td></tr>`;
         }
 
         const [allFiles, categories] = await Promise.all([
@@ -45,7 +45,7 @@ async function loadPendingFiles() {
     } catch (err) {
         console.error("Error loading pending files:", err);
         if (pendingFilesTable) {
-            pendingFilesTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
+            pendingFilesTable.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 2rem;">Error: ${err.message}</td></tr>`;
         }
     }
 }
