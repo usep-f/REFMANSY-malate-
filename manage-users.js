@@ -280,8 +280,19 @@ function setupForm() {
                 });
             } else {
                 const password = document.getElementById("password")?.value || "";
+                const confirmPassword = document.getElementById("confirmPassword")?.value || "";
+
                 if (!password || password.length < 6) {
                     showFormMessage("Password must be at least 6 characters.", "error");
+                    if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = "Save User";
+                    }
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showFormMessage("Passwords do not match. Please verify.", "error");
                     if (saveBtn) {
                         saveBtn.disabled = false;
                         saveBtn.textContent = "Save User";

@@ -900,6 +900,225 @@ const refmansyApi = {
             if (error) throw error;
             return true;
         }
+    },
+
+    // -------------------------------------------------------------
+    // System Backup & Disaster Recovery Services
+    // -------------------------------------------------------------
+    backup: {
+        async getSystemStats() {
+            try {
+                const [
+                    { count: profilesCount, error: err1 },
+                    { count: categoriesCount, error: err2 },
+                    { count: tagsCount, error: err3 },
+                    { count: researchCount, error: err4 },
+                    { count: downloadsCount, error: err5 },
+                    { count: feedbackCount, error: err6 }
+                ] = await Promise.all([
+                    supabaseClient.from("profiles").select("*", { count: "exact", head: true }),
+                    supabaseClient.from("categories").select("*", { count: "exact", head: true }),
+                    supabaseClient.from("tags").select("*", { count: "exact", head: true }),
+                    supabaseClient.from("research_files").select("*", { count: "exact", head: true }),
+                    supabaseClient.from("download_records").select("*", { count: "exact", head: true }),
+                    supabaseClient.from("feedback").select("*", { count: "exact", head: true })
+                ]);
+
+                if (err1 || err2 || err3 || err4 || err5 || err6) {
+                    console.warn("Some table stats notice:", { err1, err2, err3, err4, err5, err6 });
+                }
+
+                const allStorageFiles = await this.listAllStorageFiles();
+                const totalStorageFiles = allStorageFiles.length;
+                const totalStorageBytes = allStorageFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+
+                return {
+                    profiles: profilesCount || 0,
+                    categories: categoriesCount || 0,
+                    tags: tagsCount || 0,
+                    researchFiles: researchCount || 0,
+                    downloadRecords: downloadsCount || 0,
+                    feedback: feedbackCount || 0,
+                    totalDatabaseRows: (profilesCount || 0) + (categoriesCount || 0) + (tagsCount || 0) + (researchCount || 0) + (downloadsCount || 0) + (feedbackCount || 0),
+                    storageFilesCount: totalStorageFiles,
+                    storageTotalSizeBytes: totalStorageBytes,
+                    storageFormattedSize: formatBytes(totalStorageBytes)
+                };
+            } catch (err) {
+                console.error("Error fetching system backup stats:", err);
+                throw err;
+            }
+        },
+
+        async listAllStorageFiles() {
+            const fileList = [];
+            
+            async function scanFolder(folder = "") {
+                const { data, error } = await supabaseClient.storage
+                    .from(STORAGE_BUCKET)
+                    .list(folder, { limit: 1000, sortBy: { column: "name", order: "asc" } });
+
+                if (error) {
+                    console.error("Storage list error in folder " + folder, error);
+                    return;
+                }
+
+                if (!data) return;
+
+                for (const item of data) {
+                    const itemPath = folder ? `${folder}/${item.name}` : item.name;
+                    if (item.id === null) {
+                        // Folder: dive deeper
+                        await scanFolder(itemPath);
+                    } else {
+                        // File object
+                        fileList.push({
+                            name: item.name,
+                            path: itemPath,
+                            size: item.metadata?.size || item.size || 0,
+                            mimetype: item.metadata?.mimetype || "application/pdf",
+                            updated_at: item.updated_at
+                        });
+                    }
+                }
+            }
+
+            await scanFolder("");
+            return fileList;
+        },
+
+        async exportDatabaseSnapshot() {
+            const [
+                { data: profiles, error: err1 },
+                { data: categories, error: err2 },
+                { data: tags, error: err3 },
+                { data: research_files, error: err4 },
+                { data: download_records, error: err5 },
+                { data: feedback, error: err6 }
+            ] = await Promise.all([
+                supabaseClient.from("profiles").select("*").order("created_at", { ascending: true }),
+                supabaseClient.from("categories").select("*").order("name", { ascending: true }),
+                supabaseClient.from("tags").select("*").order("name", { ascending: true }),
+                supabaseClient.from("research_files").select("*").order("created_at", { ascending: true }),
+                supabaseClient.from("download_records").select("*").order("downloaded_at", { ascending: true }),
+                supabaseClient.from("feedback").select("*").order("created_at", { ascending: true })
+            ]);
+
+            if (err1) throw new Error("Failed to export profiles: " + err1.message);
+            if (err2) throw new Error("Failed to export categories: " + err2.message);
+            if (err3) throw new Error("Failed to export tags: " + err3.message);
+            if (err4) throw new Error("Failed to export research files: " + err4.message);
+            if (err5) throw new Error("Failed to export download records: " + err5.message);
+            if (err6) throw new Error("Failed to export feedback: " + err6.message);
+
+            return {
+                profiles: profiles || [],
+                categories: categories || [],
+                tags: tags || [],
+                research_files: research_files || [],
+                download_records: download_records || [],
+                feedback: feedback || []
+            };
+        },
+
+        async downloadStorageFileBlob(filePath) {
+            const { data, error } = await supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .download(filePath);
+
+            if (error) throw error;
+            return data;
+        },
+
+        async uploadStorageFileBlob(filePath, blob, contentType = "application/pdf") {
+            const { data, error } = await supabaseClient.storage
+                .from(STORAGE_BUCKET)
+                .upload(filePath, blob, {
+                    contentType: contentType,
+                    upsert: true
+                });
+
+            if (error) throw error;
+            return data;
+        },
+
+        async executeDatabaseRestore(dbData, onProgress = () => {}) {
+            // 1. Purge data in reverse foreign-key dependency order
+            onProgress({ stage: "purge", step: 1, totalSteps: 8, message: "Purging existing download audit records..." });
+            const { error: delDownErr } = await supabaseClient.from("download_records").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            if (delDownErr) console.warn("Download records purge notice:", delDownErr.message);
+
+            onProgress({ stage: "purge", step: 2, totalSteps: 8, message: "Purging existing user feedback..." });
+            const { error: delFeedErr } = await supabaseClient.from("feedback").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            if (delFeedErr) console.warn("Feedback purge notice:", delFeedErr.message);
+
+            onProgress({ stage: "purge", step: 3, totalSteps: 8, message: "Purging existing research metadata records..." });
+            const { error: delResErr } = await supabaseClient.from("research_files").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            if (delResErr) console.warn("Research files purge notice:", delResErr.message);
+
+            onProgress({ stage: "purge", step: 4, totalSteps: 8, message: "Purging existing tags and categories..." });
+            await supabaseClient.from("tags").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+            await supabaseClient.from("categories").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+
+            // 2. Insert data in primary foreign-key dependency order
+            // Profiles (Upsert to prevent conflict with current admin profile)
+            if (dbData.profiles && dbData.profiles.length > 0) {
+                onProgress({ stage: "insert", step: 5, totalSteps: 8, message: `Restoring ${dbData.profiles.length} user profiles...` });
+                for (let i = 0; i < dbData.profiles.length; i += 50) {
+                    const batch = dbData.profiles.slice(i, i + 50);
+                    const { error } = await supabaseClient.from("profiles").upsert(batch, { onConflict: "id" });
+                    if (error) console.warn("Profile upsert notice:", error.message);
+                }
+            }
+
+            // Categories & Tags
+            if (dbData.categories && dbData.categories.length > 0) {
+                onProgress({ stage: "insert", step: 6, totalSteps: 8, message: `Restoring ${dbData.categories.length} categories & tags...` });
+                for (let i = 0; i < dbData.categories.length; i += 50) {
+                    const batch = dbData.categories.slice(i, i + 50);
+                    const { error } = await supabaseClient.from("categories").upsert(batch, { onConflict: "id" });
+                    if (error) console.warn("Category insert notice:", error.message);
+                }
+            }
+
+            if (dbData.tags && dbData.tags.length > 0) {
+                for (let i = 0; i < dbData.tags.length; i += 50) {
+                    const batch = dbData.tags.slice(i, i + 50);
+                    const { error } = await supabaseClient.from("tags").upsert(batch, { onConflict: "id" });
+                    if (error) console.warn("Tag insert notice:", error.message);
+                }
+            }
+
+            // Research Files
+            if (dbData.research_files && dbData.research_files.length > 0) {
+                onProgress({ stage: "insert", step: 7, totalSteps: 8, message: `Restoring ${dbData.research_files.length} research records...` });
+                for (let i = 0; i < dbData.research_files.length; i += 50) {
+                    const batch = dbData.research_files.slice(i, i + 50);
+                    const { error } = await supabaseClient.from("research_files").upsert(batch, { onConflict: "id" });
+                    if (error) throw new Error("Failed to restore research records: " + error.message);
+                }
+            }
+
+            // Download Records & Feedback (Analytics & Metrics restoration)
+            onProgress({ stage: "insert", step: 8, totalSteps: 8, message: "Restoring download analytics and feedback logs..." });
+            if (dbData.download_records && dbData.download_records.length > 0) {
+                for (let i = 0; i < dbData.download_records.length; i += 50) {
+                    const batch = dbData.download_records.slice(i, i + 50);
+                    const { error } = await supabaseClient.from("download_records").upsert(batch, { onConflict: "id" });
+                    if (error) console.warn("Download records insert notice:", error.message);
+                }
+            }
+
+            if (dbData.feedback && dbData.feedback.length > 0) {
+                for (let i = 0; i < dbData.feedback.length; i += 50) {
+                    const batch = dbData.feedback.slice(i, i + 50);
+                    const { error } = await supabaseClient.from("feedback").upsert(batch, { onConflict: "id" });
+                    if (error) console.warn("Feedback insert notice:", error.message);
+                }
+            }
+
+            return true;
+        }
     }
 };
 

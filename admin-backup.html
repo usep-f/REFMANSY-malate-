@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Backup & Recovery | Refmansy Admin</title>
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    >
+
+    <link rel="stylesheet" href="admin-backup.css">
+</head>
+
+<body>
+
+    <div class="page-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <div class="admin-profile">
+
+                <div class="profile-logos">
+                    <img src="LOGO LCNHS.png" alt="LCNHS Logo" class="profile-logo-img" width="52" height="52">
+                    <img src="RESPROGRAM.png" alt="Research Program Logo" class="profile-logo-img" width="52" height="52">
+                </div>
+
+                <div class="profile-information">
+                    <h1>REFMANSY Admin</h1>
+                    <p>Management Panel</p>
+                </div>
+
+            </div>
+
+            <nav class="sidebar-nav">
+
+                <a href="admin-dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="research-files.html">
+                    <i class="fa-regular fa-folder"></i>
+                    <span>Research Files</span>
+                </a>
+
+                <a href="pending-files.html">
+                    <i class="fa-regular fa-clock"></i>
+                    <span>Pending Files</span>
+                </a>
+
+                <a href="approved-files.html">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <span>Approved Files</span>
+                </a>
+
+                <a href="rejected-files.html">
+                    <i class="fa-solid fa-xmark"></i>
+                    <span>Rejected Files</span>
+                </a>
+
+                <a href="categories.html">
+                    <i class="fa-solid fa-tag"></i>
+                    <span>Categories / Tags</span>
+                </a>
+
+                <a href="manage-users.html">
+                    <i class="fa-regular fa-user"></i>
+                    <span>Users</span>
+                </a>
+
+                <a href="feedback.html">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span>Feedback</span>
+                </a>
+
+                <a href="admin-reports.html">
+                    <i class="fa-regular fa-file-lines"></i>
+                    <span>Reports</span>
+                </a>
+
+                <a href="admin-backup.html" class="active">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Backup & Recovery</span>
+                </a>
+
+            </nav>
+
+            <button type="button" id="logoutButton" class="logout-button">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Logout</span>
+            </button>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <header class="page-header">
+
+                <div>
+                    <h2>Backup & Disaster Recovery</h2>
+                    <p>
+                        Generate offline system snapshots, preserve research archives locally, and restore data.
+                    </p>
+                </div>
+
+                <div class="header-actions">
+                    <button type="button" id="refreshStatsButton" class="btn-refresh" title="Refresh Live Statistics">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>Refresh Stats</span>
+                    </button>
+                </div>
+
+            </header>
+
+            <!-- Quick Stats Row -->
+            <section class="stats-grid">
+
+                <div class="stat-card">
+                    <div class="stat-icon icon-db">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Database Records</span>
+                        <h3 id="statTotalDbRows" class="stat-value"><i class="fa-solid fa-spinner fa-spin"></i></h3>
+                        <span id="statDbBreakdown" class="stat-sub">Calculating...</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon icon-storage">
+                        <i class="fa-solid fa-box-archive"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Document Storage</span>
+                        <h3 id="statTotalStorageSize" class="stat-value"><i class="fa-solid fa-spinner fa-spin"></i></h3>
+                        <span id="statStorageCount" class="stat-sub">Calculating...</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon icon-analytics">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Analytics & Activity Logs</span>
+                        <h3 id="statTotalAnalytics" class="stat-value"><i class="fa-solid fa-spinner fa-spin"></i></h3>
+                        <span id="statAnalyticsBreakdown" class="stat-sub">Downloads & Feedback</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon icon-history">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="stat-details">
+                        <span class="stat-label">Last Export Session</span>
+                        <h3 id="statLastBackupDate" class="stat-value-text">None Recorded</h3>
+                        <span id="statLastBackupSub" class="stat-sub">Ready to backup</span>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Backup & Restore Split Workspace -->
+            <div class="backup-workspace">
+
+                <!-- Left Column: Export Backup -->
+                <div class="workspace-card export-card">
+
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-badge badge-export">
+                                <i class="fa-solid fa-download"></i> Export
+                            </div>
+                            <h3>Create System Backup</h3>
+                        </div>
+                        <p class="card-desc">
+                            Compiles all database tables, research documents, download logs, and feedback into a single, integrity-verified <code>.zip</code> file saved directly to your local storage.
+                        </p>
+                    </div>
+
+                    <div class="included-items-list">
+                        <h4><i class="fa-solid fa-circle-check"></i> What's Included in Snapshot:</h4>
+                        <div class="included-grid">
+                            <div class="included-item">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <div>
+                                    <strong>Research Documents</strong>
+                                    <small>All PDF files from cloud storage</small>
+                                </div>
+                            </div>
+                            <div class="included-item">
+                                <i class="fa-solid fa-table"></i>
+                                <div>
+                                    <strong>Research Metadata</strong>
+                                    <small>Titles, authors, review statuses</small>
+                                </div>
+                            </div>
+                            <div class="included-item">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                <div>
+                                    <strong>Historical Analytics</strong>
+                                    <small>100% download records & timestamps</small>
+                                </div>
+                            </div>
+                            <div class="included-item">
+                                <i class="fa-solid fa-users"></i>
+                                <div>
+                                    <strong>User Profiles & Roles</strong>
+                                    <small>Faculty & admin account records</small>
+                                </div>
+                            </div>
+                            <div class="included-item">
+                                <i class="fa-solid fa-tags"></i>
+                                <div>
+                                    <strong>Categories & Tags</strong>
+                                    <small>Taxonomy & discipline catalog</small>
+                                </div>
+                            </div>
+                            <div class="included-item">
+                                <i class="fa-solid fa-comments"></i>
+                                <div>
+                                    <strong>User Feedback Logs</strong>
+                                    <small>Ratings, messages & admin replies</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-action-box">
+                        <button type="button" id="startBackupBtn" class="btn-primary-backup">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            <span>Create & Download System Backup</span>
+                        </button>
+                    </div>
+
+                    <!-- Export Progress Container -->
+                    <div id="exportProgressBox" class="progress-box" style="display: none;">
+                        <div class="progress-header">
+                            <span id="exportProgressStage">Preparing snapshot...</span>
+                            <span id="exportProgressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div id="exportProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <p id="exportProgressDetails" class="progress-details">Initializing system queries...</p>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Restore Backup -->
+                <div class="workspace-card restore-card">
+
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-badge badge-restore">
+                                <i class="fa-solid fa-upload"></i> Restore
+                            </div>
+                            <h3>Disaster Recovery & Restore</h3>
+                        </div>
+                        <p class="card-desc">
+                            Upload a previously downloaded <code>REFMANSY_BACKUP_*.zip</code> archive to restore the entire system state, database records, and research documents.
+                        </p>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div id="restoreDropzone" class="dropzone">
+                        <input type="file" id="backupFileInput" accept=".zip" style="display: none;">
+                        <div class="dropzone-content">
+                            <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                            <h4>Drag and drop backup (.zip) archive here</h4>
+                            <p>or click to select file from your computer</p>
+                            <span class="dropzone-hint">Supports REFMANSY integrity-checked ZIP backups</span>
+                        </div>
+                    </div>
+
+                    <!-- Staging Inspection Preview (Hidden until file selected) -->
+                    <div id="stagingInspectionBox" class="staging-box" style="display: none;">
+                        <div class="staging-header">
+                            <div class="staging-title">
+                                <i class="fa-solid fa-file-zipper"></i>
+                                <span id="stagedFileName">REFMANSY_BACKUP.zip</span>
+                            </div>
+                            <div id="stagedIntegrityBadge" class="integrity-badge badge-valid">
+                                <i class="fa-solid fa-shield-check"></i>
+                                <span>Integrity Verified (SHA-256 Valid)</span>
+                            </div>
+                        </div>
+
+                        <div class="staging-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Snapshot Date:</span>
+                                <strong id="stagedCreatedAt">-</strong>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Created By:</span>
+                                <strong id="stagedCreatedBy">-</strong>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Total DB Rows:</span>
+                                <strong id="stagedDbTotal">-</strong>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Documents Archive:</span>
+                                <strong id="stagedStorageTotal">-</strong>
+                            </div>
+                        </div>
+
+                        <div class="staging-tables-breakdown">
+                            <span class="breakdown-title">Record Distribution:</span>
+                            <div id="stagedPillsList" class="pills-list">
+                                <!-- Generated dynamically -->
+                            </div>
+                        </div>
+
+                        <div class="staging-actions">
+                            <button type="button" id="clearStagedFileBtn" class="btn-secondary">
+                                <i class="fa-solid fa-xmark"></i> Choose Another File
+                            </button>
+                            <button type="button" id="openRestoreModalBtn" class="btn-danger-restore">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Proceed to Restore...
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Restore Progress Container -->
+                    <div id="restoreProgressBox" class="progress-box" style="display: none;">
+                        <div class="progress-header">
+                            <span id="restoreProgressStage">Restoring system...</span>
+                            <span id="restoreProgressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div id="restoreProgressBar" class="progress-bar-fill fill-danger" style="width: 0%;"></div>
+                        </div>
+                        <p id="restoreProgressDetails" class="progress-details">Synchronizing database tables...</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Best Practices & Security Advisory -->
+            <section class="advisory-card">
+                <div class="advisory-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="advisory-content">
+                    <h4>Disaster Recovery & Offline Preservation Guidelines</h4>
+                    <div class="advisory-grid">
+                        <div class="advisory-item">
+                            <strong><i class="fa-solid fa-calendar-check"></i> Regular Snapshots:</strong>
+                            <p>Download a system backup weekly or before major semester end reporting cycles.</p>
+                        </div>
+                        <div class="advisory-item">
+                            <strong><i class="fa-solid fa-hard-drive"></i> Offsite Storage:</strong>
+                            <p>Store exported <code>.zip</code> files on an encrypted external drive or dedicated school backup server.</p>
+                        </div>
+                        <div class="advisory-item">
+                            <strong><i class="fa-solid fa-fingerprint"></i> Checksum Verification:</strong>
+                            <p>Every backup contains SHA-256 hashes inside <code>manifest.json</code> to guarantee zero corruption or tampering.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Danger Confirmation Modal for System Restore -->
+    <div id="restoreConfirmModal" class="modal-overlay" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header modal-header-danger">
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-triangle-exclamation modal-icon-danger"></i>
+                    <div>
+                        <h3>Critical Action: System Restore Confirmation</h3>
+                        <p>This action will replace the current database with the selected snapshot.</p>
+                    </div>
+                </div>
+                <button type="button" id="closeRestoreModalBtn" class="modal-close-btn">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="alert-box-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div>
+                        <strong>Please read carefully before proceeding:</strong>
+                        <p>Restoring will purge current database records and replace them with the records in the backup archive. Any research files or user activity added after the snapshot date will be overwritten.</p>
+                    </div>
+                </div>
+
+                <div class="restore-summary-preview">
+                    <div class="preview-row">
+                        <span>Target Snapshot:</span>
+                        <strong id="modalSnapshotName">REFMANSY_BACKUP.zip</strong>
+                    </div>
+                    <div class="preview-row">
+                        <span>Snapshot Date:</span>
+                        <strong id="modalSnapshotDate">-</strong>
+                    </div>
+                    <div class="preview-row">
+                        <span>Restoring Documents:</span>
+                        <strong id="modalSnapshotDocs">-</strong>
+                    </div>
+                </div>
+
+                <div class="confirmation-input-group">
+                    <label for="restoreConfirmInput">
+                        Type <span class="confirm-keyword">RESTORE-CONFIRM</span> below to confirm disaster recovery:
+                    </label>
+                    <input
+                        type="text"
+                        id="restoreConfirmInput"
+                        class="confirm-input"
+                        placeholder="Type RESTORE-CONFIRM here"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div id="restoreModalAlert" class="modal-alert-error" style="display: none;"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="cancelRestoreModalBtn" class="btn-secondary">Cancel</button>
+                <button type="button" id="confirmExecuteRestoreBtn" class="btn-danger-execute" disabled>
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Execute Full System Restore</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="auth-guard.js"></script>
+    <script src="admin-backup.js"></script>
+
+</body>
+</html>

@@ -14,7 +14,8 @@
         "pending-files.html",
         "approved-files.html",
         "rejected-files.html",
-        "feedback.html"
+        "feedback.html",
+        "admin-backup.html"
     ].some(page => path.includes(page));
 
     const isFacultyPage = [

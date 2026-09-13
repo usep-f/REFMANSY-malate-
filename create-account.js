@@ -1,3 +1,6 @@
+// Self-registration is disabled. Redirect to login.
+window.location.replace("login.html");
+
 const stepRegistration = document.getElementById("stepRegistration");
 const stepOtpVerification = document.getElementById("stepOtpVerification");
 const createAccountForm = document.getElementById("createAccountForm");

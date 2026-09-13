@@ -6,12 +6,27 @@
     box-sizing: border-box;
 }
 
+:root {
+    --primary-green: #1f9254;
+    --dark-green: #14532d;
+    --light-green: #cef5d8;
+    --accent-green: #22c55e;
+    --approved-green: #16a34a;
+    --pending-yellow: #d97706;
+    --rejected-red: #dc2626;
+    --sidebar-bg: #adffb6;
+    --sidebar-border: #8ee29a;
+    --card-bg: #ffffff;
+    --text-dark: #16261d;
+    --text-gray: #65776d;
+}
+
 body {
     min-height: 100vh;
     padding: 20px;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
-    background: linear-gradient(135deg, #0d2818, #1f9254);
+    background-color: var(--sidebar-bg, #adffb6);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -28,9 +43,10 @@ body {
     width: 100%;
     max-width: 450px;
     padding: 40px;
-    background-color: #ffffff;
-    border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+    background-color: var(--card-bg, #ffffff);
+    border: 1px solid var(--sidebar-border, #8ee29a);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(20, 83, 45, 0.12);
 }
 
 .login-logos {
@@ -108,7 +124,7 @@ body {
 .input-group input:focus,
 .input-group select:focus {
     border-color: #1f9254;
-    box-shadow: 0 0 0 3px rgba(79, 134, 198, 0.15);
+    box-shadow: 0 0 0 3px rgba(31, 146, 84, 0.2);
 }
 
 .login-options-row {
@@ -227,6 +243,16 @@ body {
 
 .login-button:active {
     transform: translateY(0);
+}
+
+.admin-notice-text {
+    color: #64748b;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid #f1f5f9;
+    line-height: 1.5;
 }
 
 .create-link {
