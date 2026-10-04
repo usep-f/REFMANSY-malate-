@@ -297,6 +297,136 @@
 
             </section>
 
+            <!-- Institutional Storage Capacity & Retention Monitoring -->
+            <section class="dashboard-card storage-capacity-card">
+
+                <div class="card-heading storage-heading">
+                    <div class="storage-title-group">
+                        <div class="storage-icon-pill">
+                            <i class="fa-solid fa-server"></i>
+                        </div>
+                        <div>
+                            <h3>Data Storage Capacity & Retention Matrix</h3>
+                            <p>Repository file allocation, maximum theses accommodation, and institutional data retention</p>
+                        </div>
+                    </div>
+
+                    <a href="admin-backup.html" class="storage-manage-link">
+                        <i class="fa-solid fa-shield-halved"></i> Manage Backups & Recovery
+                    </a>
+                </div>
+
+                <div class="storage-grid">
+
+                    <!-- Storage Quota Gauge & Numbers -->
+                    <div class="storage-metric-box">
+                        <div class="metric-top">
+                            <span class="metric-label">Active Storage Quota</span>
+                            <span id="storageHealthBadge" class="quota-health-badge health-normal">
+                                <i class="fa-solid fa-circle-check"></i> Healthy Capacity
+                            </span>
+                        </div>
+
+                        <div class="quota-progress-wrapper">
+                            <div class="quota-bar-track">
+                                <div id="storageProgressBar" class="quota-bar-fill" style="width: 0%;"></div>
+                            </div>
+                            <div class="quota-numbers">
+                                <span>Used: <strong id="storageUsedText">Calculating...</strong> / <span id="storageMaxText">100 GB</span></span>
+                                <span id="storagePercentText" class="quota-pct">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="quota-sub-details">
+                            <div class="quota-mini-stat">
+                                <span class="mini-label">Free Space</span>
+                                <strong id="storageRemainingText">100 GB</strong>
+                            </div>
+                            <div class="quota-mini-stat">
+                                <span class="mini-label">Max File Size</span>
+                                <strong>10 MB / PDF</strong>
+                            </div>
+                            <div class="quota-mini-stat">
+                                <span class="mini-label">PostgreSQL DB Limit</span>
+                                <strong>8 GB Included</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thesis Accommodation Metrics -->
+                    <div class="storage-metric-box">
+                        <div class="metric-top">
+                            <span class="metric-label">Theses Accommodation Capacity</span>
+                            <span class="capacity-rate-badge">~3 MB Avg Thesis</span>
+                        </div>
+
+                        <div class="accommodation-display">
+                            <div class="accommodation-total">
+                                <h4 id="thesesAccommodatedText">~33,300</h4>
+                                <p>Maximum Theses Accommodated</p>
+                            </div>
+
+                            <div class="accommodation-breakdown">
+                                <div class="breakdown-row">
+                                    <span><i class="fa-solid fa-folder-closed"></i> Theses Currently Stored:</span>
+                                    <strong id="thesesCurrentCount">0</strong>
+                                </div>
+                                <div class="breakdown-row">
+                                    <span><i class="fa-solid fa-cloud-arrow-up"></i> Remaining Capacity Slots:</span>
+                                    <strong id="thesesRemainingSlots">~33,300</strong>
+                                </div>
+                                <div class="breakdown-row">
+                                    <span><i class="fa-solid fa-shield"></i> Worst-Case Cap (at 10MB each):</span>
+                                    <strong id="thesesWorstCaseCap">10,000 Theses</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Retention Policy Details -->
+                    <div class="storage-metric-box retention-box">
+                        <div class="metric-top">
+                            <span class="metric-label">Institutional Retention Lifecycle</span>
+                            <span class="retention-rule-badge"><i class="fa-solid fa-scale-balanced"></i> DepEd / CHED</span>
+                        </div>
+
+                        <div class="retention-list">
+                            <div class="retention-item">
+                                <div class="retention-icon perm-icon">
+                                    <i class="fa-solid fa-infinity"></i>
+                                </div>
+                                <div>
+                                    <strong>Approved Research Theses</strong>
+                                    <p>Retained <span>Indefinitely (Permanent Archive)</span> as official academic output.</p>
+                                </div>
+                            </div>
+
+                            <div class="retention-item">
+                                <div class="retention-icon grace-icon">
+                                    <i class="fa-regular fa-clock"></i>
+                                </div>
+                                <div>
+                                    <strong>Rejected / Revision Drafts</strong>
+                                    <p>Retained for <span>90 Days</span> for author revision before automated cleanup.</p>
+                                </div>
+                            </div>
+
+                            <div class="retention-item">
+                                <div class="retention-icon audit-icon">
+                                    <i class="fa-solid fa-clipboard-check"></i>
+                                </div>
+                                <div>
+                                    <strong>Readership & Download Logs</strong>
+                                    <p>Retained for <span>5 Years</span> to support institutional compliance and audit trails.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </section>
+
             <!-- Recent Research Files -->
             <section class="dashboard-card recent-files">
 

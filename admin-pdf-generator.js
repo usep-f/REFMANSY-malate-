@@ -314,17 +314,21 @@
         // MODULE A: EXECUTIVE SUMMARY & ANALYTICS
         // -------------------------------------------------------------
         if (config.modules.executive) {
-            drawSectionHeading("Module A: Executive Research Analytics & KPI Overview");
+            drawSectionHeading("Module A: Executive Research Analytics & Qualitative Findings");
 
             const total = allFiles.length;
             const approved = allFiles.filter(f => f.status === "approved").length;
             const pending = allFiles.filter(f => f.status === "pending").length;
             const rejected = allFiles.filter(f => f.status === "rejected").length;
-            const totalDownloads = downloadsList.length;
 
-            // Render KPI Summary Cards
+            // Generate qualitative findings synthesis
+            const insights = (window.refmansyApi && window.refmansyApi.analytics && window.refmansyApi.analytics.generateExecutiveFindings)
+                ? window.refmansyApi.analytics.generateExecutiveFindings(allFiles, categoriesList, downloadsList, usersList)
+                : null;
+
+            // 1. Render KPI Summary Cards
             const cardWidth = (contentWidth - 12) / 4;
-            const cardHeight = 16;
+            const cardHeight = 15;
             const cardY = currentY;
 
             const kpis = [
@@ -343,22 +347,90 @@
 
                 // Accent Top Border
                 doc.setFillColor(...kpi.color);
-                doc.rect(x, cardY, cardWidth, 1.5, "F");
+                doc.rect(x, cardY, cardWidth, 1.2, "F");
 
                 doc.setFont("helvetica", "bold");
-                doc.setFontSize(13);
+                doc.setFontSize(12);
                 doc.setTextColor(...kpi.color);
-                doc.text(kpi.value, x + cardWidth / 2, cardY + 8, { align: "center" });
+                doc.text(kpi.value, x + cardWidth / 2, cardY + 7.5, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(7);
+                doc.setFontSize(6.5);
                 doc.setTextColor(100, 116, 139);
-                doc.text(kpi.label.toUpperCase(), x + cardWidth / 2, cardY + 13, { align: "center" });
+                doc.text(kpi.label.toUpperCase(), x + cardWidth / 2, cardY + 12.2, { align: "center" });
             });
 
-            currentY = cardY + cardHeight + 8;
+            currentY = cardY + cardHeight + 6;
 
-            // Generate Off-screen Vector Charts
+            // 2. Executive Narrative Summary Box
+            if (insights) {
+                const summaryHeadline = insights.headline || "Institutional Research Repository Synthesis";
+                const summaryLines = doc.splitTextToSize(insights.summaryParagraph || "", contentWidth - 14);
+                const narrativeBoxHeight = 10 + (summaryLines.length * 3.6);
+
+                doc.setFillColor(240, 253, 244); // #f0fdf4
+                doc.setDrawColor(187, 247, 208); // #bbf7d0
+                doc.setLineWidth(0.4);
+                doc.roundedRect(marginX, currentY, contentWidth, narrativeBoxHeight, 2, 2, "FD");
+
+                // Green accent stripe on left
+                doc.setFillColor(31, 146, 84); // #1f9254
+                doc.rect(marginX, currentY, 3, narrativeBoxHeight, "F");
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(8.5);
+                doc.setTextColor(20, 83, 45); // #14532d
+                doc.text(summaryHeadline, marginX + 6, currentY + 5.5);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(7.2);
+                doc.setTextColor(22, 101, 52); // #166534
+                doc.text(summaryLines, marginX + 6, currentY + 9.5);
+
+                currentY += narrativeBoxHeight + 6;
+
+                // 3. 4-Box Key Analytical Findings (2x2 compact grid)
+                const gridW = (contentWidth - 6) / 2;
+                const gridH = 13.5;
+
+                for (let i = 0; i < 4; i++) {
+                    const finding = insights.findings[i];
+                    if (!finding) continue;
+
+                    const col = i % 2;
+                    const row = Math.floor(i / 2);
+                    const fx = marginX + col * (gridW + 6);
+                    const fy = currentY + row * (gridH + 4);
+
+                    doc.setFillColor(248, 250, 252);
+                    doc.setDrawColor(226, 232, 240);
+                    doc.setLineWidth(0.3);
+                    doc.roundedRect(fx, fy, gridW, gridH, 1.5, 1.5, "FD");
+
+                    // Small Tag
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(5.8);
+                    doc.setTextColor(100, 116, 139);
+                    doc.text(finding.tag.toUpperCase(), fx + 4, fy + 3.8);
+
+                    // Title
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(30, 41, 59);
+                    doc.text(finding.title, fx + 4, fy + 7.2);
+
+                    // Description (truncated if long)
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(6.5);
+                    doc.setTextColor(71, 85, 105);
+                    const descLines = doc.splitTextToSize(finding.desc, gridW - 8);
+                    doc.text(descLines.slice(0, 2), fx + 4, fy + 10.8);
+                }
+
+                currentY += (2 * (gridH + 4)) + 4;
+            }
+
+            // 4. Generate Off-screen Vector Charts
             const statusChartDataUrl = renderStatusDonutChart(approved, pending, rejected, total);
 
             // Compute category counts
@@ -370,15 +442,15 @@
 
             // Render Charts side by side
             const chartWidth = (contentWidth - 6) / 2;
-            const chartHeight = 48;
+            const chartHeight = 44;
 
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(8.5);
+            doc.setFontSize(8);
             doc.setTextColor(30, 41, 59);
             doc.text("Status Distribution Ratio", marginX, currentY + 3);
             doc.text("Research by Academic Category", marginX + chartWidth + 6, currentY + 3);
 
-            currentY += 6;
+            currentY += 5;
 
             try {
                 doc.addImage(statusChartDataUrl, "PNG", marginX, currentY, chartWidth, chartHeight);
@@ -387,7 +459,42 @@
                 console.warn("Error embedding charts in PDF:", e);
             }
 
-            currentY += chartHeight + 10;
+            currentY += chartHeight + 6;
+
+            // 5. Strategic Recommendations
+            if (insights && insights.recommendations && insights.recommendations.length > 0) {
+                // Check if page break needed
+                if (currentY + 22 > pageHeight - 30) {
+                    doc.addPage();
+                    currentY = 20;
+                }
+
+                const recBoxY = currentY;
+                const recHeight = 7 + (insights.recommendations.length * 3.8);
+
+                doc.setFillColor(255, 251, 235); // #fffbeb
+                doc.setDrawColor(253, 230, 138); // #fde68a
+                doc.setLineWidth(0.3);
+                doc.roundedRect(marginX, recBoxY, contentWidth, recHeight, 2, 2, "FD");
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(7.5);
+                doc.setTextColor(146, 64, 14); // #92400e
+                doc.text("ACTIONABLE ADMINISTRATIVE RECOMMENDATIONS:", marginX + 4, recBoxY + 4.5);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(6.8);
+                doc.setTextColor(120, 53, 15); // #78350f
+
+                insights.recommendations.forEach((rec, rIdx) => {
+                    const rLines = doc.splitTextToSize(`*  ${rec}`, contentWidth - 10);
+                    doc.text(rLines, marginX + 5, recBoxY + 8.5 + (rIdx * 4));
+                });
+
+                currentY = recBoxY + recHeight + 8;
+            } else {
+                currentY += 4;
+            }
         }
 
         // -------------------------------------------------------------

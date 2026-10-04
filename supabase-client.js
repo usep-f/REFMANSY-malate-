@@ -304,13 +304,163 @@ const refmansyApi = {
             return normalizeResearchFile(data);
         },
 
+        async checkDuplicateTitle(title, excludeId = null, threshold = 0.75) {
+            if (!title || title.trim().length < 4) return [];
+
+            const cleanInput = title.trim();
+
+            // 1. Try Supabase Postgres RPC if similarity extension & function are active
+            try {
+                const { data, error } = await supabaseClient.rpc("check_title_similarity", {
+                    input_title: cleanInput,
+                    similarity_threshold: threshold,
+                    exclude_file_id: excludeId || null
+                });
+
+                if (!error && Array.isArray(data)) {
+                    return data.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        researcher: item.researcher,
+                        category: item.category,
+                        publicationYear: item.publication_year,
+                        status: item.status,
+                        similarityScore: item.similarity_score || 0,
+                        similarityPct: Math.round((item.similarity_score || 0) * 100)
+                    }));
+                }
+            } catch (rpcErr) {
+                console.warn("Postgres similarity RPC notice, using client algorithm fallback:", rpcErr);
+            }
+
+            // 2. High-performance Client-Side Fallback Matching (Dice Bi-gram & Token Jaccard Similarity)
+            try {
+                const allFiles = await this.getAllFiles();
+                const matches = [];
+
+                for (const file of allFiles) {
+                    if (excludeId && file.id === excludeId) continue;
+                    if (!file.title) continue;
+
+                    const score = calculateTitleSimilarityScore(cleanInput, file.title);
+                    if (score >= threshold) {
+                        matches.push({
+                            id: file.id,
+                            title: file.title,
+                            researcher: file.researcher,
+                            category: file.category,
+                            publicationYear: file.publicationYear,
+                            status: file.status,
+                            similarityScore: score,
+                            similarityPct: Math.round(score * 100)
+                        });
+                    }
+                }
+
+                // Sort descending by similarity score
+                matches.sort((a, b) => b.similarityScore - a.similarityScore);
+                return matches.slice(0, 5);
+            } catch (err) {
+                console.error("Error during client-side duplicate checking:", err);
+                return [];
+            }
+        },
+
+        async checkDuplicateFileHash(fileHash, excludeId = null) {
+            if (!fileHash) return [];
+
+            // 1. Try Supabase Postgres RPC
+            try {
+                const { data, error } = await supabaseClient.rpc("check_duplicate_file_hash", {
+                    input_file_hash: fileHash,
+                    exclude_file_id: excludeId || null
+                });
+
+                if (!error && Array.isArray(data)) {
+                    return data.map(item => ({
+                        id: item.id,
+                        title: item.title,
+                        researcher: item.researcher,
+                        category: item.category,
+                        publicationYear: item.publication_year,
+                        fileName: item.file_name,
+                        fileSize: item.file_size ? formatBytes(item.file_size) : "N/A",
+                        fileSizeBytes: item.file_size || 0,
+                        status: item.status
+                    }));
+                }
+            } catch (rpcErr) {
+                console.warn("Postgres file hash RPC notice, querying table directly:", rpcErr);
+            }
+
+            // 2. Direct Query Fallback on research_files table
+            try {
+                let query = supabaseClient
+                    .from("research_files")
+                    .select("id, title, researcher, category, publication_year, file_name, file_size, status")
+                    .eq("file_hash", fileHash);
+
+                if (excludeId) {
+                    query = query.neq("id", excludeId);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                return (data || []).map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    researcher: item.researcher,
+                    category: item.category,
+                    publicationYear: item.publication_year,
+                    fileName: item.file_name,
+                    fileSize: item.file_size ? formatBytes(item.file_size) : "N/A",
+                    fileSizeBytes: item.file_size || 0,
+                    status: item.status
+                }));
+            } catch (err) {
+                console.error("Error during file hash duplicate checking:", err);
+                return [];
+            }
+        },
+
         async createResearchFile(payload, fileObj) {
+            // 1. Strict Title Duplication Prevention Guard
+            const titleDuplicates = await this.checkDuplicateTitle(payload.title, null, 0.80);
+            if (titleDuplicates && titleDuplicates.length > 0) {
+                const topMatch = titleDuplicates[0];
+                const msg = `Duplicate Detected: A similar research document already exists in the repository: "${topMatch.title}" by ${topMatch.researcher} (${topMatch.similarityPct}% match). Submissions with identical or similar titles are not permitted.`;
+                const err = new Error(msg);
+                err.isDuplicate = true;
+                err.duplicateType = "title";
+                err.matchedFile = topMatch;
+                throw err;
+            }
+
             let storagePath = null;
             let fileName = payload.fileName || (fileObj ? fileObj.name : "document.pdf");
             let fileSize = payload.fileSize || (fileObj ? fileObj.size : 0);
+            let fileHash = payload.fileHash || null;
 
-            // Upload PDF if a file object is provided
+            // 2. Strict Binary PDF Content Hashing Guard (SHA-256)
             if (fileObj) {
+                if (!fileHash) {
+                    fileHash = await computeFileSha256(fileObj);
+                }
+
+                if (fileHash) {
+                    const hashDuplicates = await this.checkDuplicateFileHash(fileHash);
+                    if (hashDuplicates && hashDuplicates.length > 0) {
+                        const topHashMatch = hashDuplicates[0];
+                        const msg = `Duplicate File Detected: This exact PDF document has already been submitted to the repository under the title: "${topHashMatch.title}" by ${topHashMatch.researcher} (${topHashMatch.publicationYear}). Submissions of identical PDF files are prohibited even if submitted under different titles.`;
+                        const err = new Error(msg);
+                        err.isDuplicate = true;
+                        err.duplicateType = "file_hash";
+                        err.matchedFile = topHashMatch;
+                        throw err;
+                    }
+                }
+
                 const user = (await supabaseClient.auth.getUser()).data.user;
                 const fileExt = fileName.split(".").pop();
                 const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
@@ -333,18 +483,19 @@ const refmansyApi = {
             const { data, error } = await supabaseClient
                 .from("research_files")
                 .insert({
-                    title: payload.title,
-                    researcher: payload.researcher,
-                    co_researchers: payload.coResearchers || "",
-                    department: payload.department || "",
+                    title: payload.title.trim(),
+                    researcher: payload.researcher.trim(),
+                    co_researchers: payload.coResearchers ? payload.coResearchers.trim() : "",
+                    department: payload.department ? payload.department.trim() : "",
                     research_type: payload.researchType || "",
                     category: payload.category,
                     publication_year: String(payload.publicationYear),
-                    description: payload.description || "",
-                    keywords: payload.keywords || "",
+                    description: payload.description ? payload.description.trim() : "",
+                    keywords: payload.keywords ? payload.keywords.trim() : "",
                     file_path: storagePath,
                     file_name: fileName,
                     file_size: fileSize,
+                    file_hash: fileHash,
                     file_type: "application/pdf",
                     owner_id: payload.ownerId,
                     status: "pending"
@@ -357,22 +508,60 @@ const refmansyApi = {
         },
 
         async updateResearchFile(fileId, payload, newFileObj) {
+            // 1. Strict Duplication Prevention Guard for updates (excluding self)
+            const titleDuplicates = await this.checkDuplicateTitle(payload.title, fileId, 0.80);
+            if (titleDuplicates && titleDuplicates.length > 0) {
+                const topMatch = titleDuplicates[0];
+                const msg = `Duplicate Detected: Another research document with a similar title already exists: "${topMatch.title}" by ${topMatch.researcher} (${topMatch.similarityPct}% match).`;
+                const err = new Error(msg);
+                err.isDuplicate = true;
+                err.duplicateType = "title";
+                err.matchedFile = topMatch;
+                throw err;
+            }
+
+            let fileHash = payload.fileHash || null;
+
+            // 2. Binary SHA-256 Duplicate Check on New File
+            if (newFileObj) {
+                if (!fileHash) {
+                    fileHash = await computeFileSha256(newFileObj);
+                }
+
+                if (fileHash) {
+                    const hashDuplicates = await this.checkDuplicateFileHash(fileHash, fileId);
+                    if (hashDuplicates && hashDuplicates.length > 0) {
+                        const topHashMatch = hashDuplicates[0];
+                        const msg = `Duplicate File Detected: This exact PDF document has already been submitted to the repository under the title: "${topHashMatch.title}" by ${topHashMatch.researcher} (${topHashMatch.publicationYear}).`;
+                        const err = new Error(msg);
+                        err.isDuplicate = true;
+                        err.duplicateType = "file_hash";
+                        err.matchedFile = topHashMatch;
+                        throw err;
+                    }
+                }
+            }
+
             const updates = {
-                title: payload.title,
-                researcher: payload.researcher,
-                co_researchers: payload.coResearchers || "",
-                department: payload.department || "",
+                title: payload.title.trim(),
+                researcher: payload.researcher.trim(),
+                co_researchers: payload.coResearchers ? payload.coResearchers.trim() : "",
+                department: payload.department ? payload.department.trim() : "",
                 research_type: payload.researchType || "",
                 category: payload.category,
                 publication_year: String(payload.publicationYear),
-                description: payload.description || "",
-                keywords: payload.keywords || "",
+                description: payload.description ? payload.description.trim() : "",
+                keywords: payload.keywords ? payload.keywords.trim() : "",
                 status: "pending", // resets to pending for re-review
                 review_comment: null,
                 reviewed_by: null,
                 reviewed_at: null,
                 updated_at: new Date().toISOString()
             };
+
+            if (fileHash) {
+                updates.file_hash = fileHash;
+            }
 
             if (newFileObj) {
                 // Fetch previous file path so we can clean it up after upload
@@ -1117,7 +1306,183 @@ const refmansyApi = {
                 }
             }
 
-            return true;
+            return { success: true, message: "System data restored successfully." };
+        },
+
+        async getStorageQuotaInfo(maxCapacityGb = 100) {
+            try {
+                const stats = await this.getSystemStats();
+                const maxBytes = maxCapacityGb * 1024 * 1024 * 1024;
+                const usedBytes = stats.storageTotalSizeBytes || 0;
+                const remainingBytes = Math.max(0, maxBytes - usedBytes);
+                const usedPercentage = Math.min(100, Math.round((usedBytes / maxBytes) * 1000) / 10);
+                
+                // Typical thesis PDF size is ~3 MB, maximum single upload limit is 10 MB
+                const avgThesisSizeBytes = 3 * 1024 * 1024;
+                const maxSingleUploadBytes = 10 * 1024 * 1024;
+                
+                const totalThesesCapacity = Math.floor(maxBytes / avgThesisSizeBytes);
+                const worstCaseCapacity = Math.floor(maxBytes / maxSingleUploadBytes);
+                const currentThesesCount = stats.researchFiles || 0;
+                const remainingThesesSlots = Math.max(0, Math.floor(remainingBytes / avgThesisSizeBytes));
+
+                return {
+                    maxCapacityGb,
+                    maxCapacityBytes: maxBytes,
+                    maxCapacityFormatted: `${maxCapacityGb} GB`,
+                    usedBytes,
+                    usedFormatted: stats.storageFormattedSize,
+                    remainingBytes,
+                    remainingFormatted: formatBytes(remainingBytes),
+                    usedPercentage,
+                    currentThesesCount,
+                    totalThesesCapacity,
+                    worstCaseCapacity,
+                    remainingThesesSlots,
+                    avgThesisSizeFormatted: "3.0 MB",
+                    maxSingleUploadFormatted: "10.0 MB",
+                    retentionPolicies: {
+                        approvedResearch: "Permanent (Indefinite Institutional Archive)",
+                        rejectedResearch: "90 Days (Revision Grace Period)",
+                        downloadAuditLogs: "5 Years (DepEd / CHED Audit Trail)",
+                        offlineBackups: "User / Administrator Managed Snapshots"
+                    }
+                };
+            } catch (err) {
+                console.error("Error calculating storage quota info:", err);
+                throw err;
+            }
+        }
+    },
+
+    // -------------------------------------------------------------
+    // Automated Research Intelligence & Analytics Summary Engine
+    // -------------------------------------------------------------
+    analytics: {
+        generateExecutiveFindings(files = [], categories = [], downloads = [], users = []) {
+            if (!files || files.length === 0) {
+                return {
+                    headline: "Institutional Repository Awaiting Initial Research Submissions",
+                    summaryParagraph: "No research documents currently meet the active filter criteria. Upload submissions to generate automated institutional analytics.",
+                    summaryText: "No research documents currently meet the active filter criteria. Upload submissions to generate automated institutional analytics.",
+                    total: 0,
+                    approved: 0,
+                    pending: 0,
+                    rejected: 0,
+                    approvalRate: 0,
+                    pendingRate: 0,
+                    rejectedRate: 0,
+                    totalVolume: 0,
+                    findings: [
+                        { tag: "Publication Health", title: "0% Approval Rate", desc: "No published thesis records matching active criteria." },
+                        { tag: "Disciplinary Focus", title: "No Category Dominance", desc: "Academic discipline breakdown will appear once theses are uploaded." },
+                        { tag: "Evaluation Pipeline", title: "Empty Evaluation Queue", desc: "No pending or unresolved thesis submissions in this view." },
+                        { tag: "Readership & Faculty", title: "No Download Logs", desc: "Faculty and student access metrics will populate upon user downloads." }
+                    ],
+                    keyFindings: [
+                        { icon: "fa-database", title: "No Submissions Found", desc: "No research records matched the current search query or date filters." }
+                    ],
+                    recommendations: [
+                        "Encourage faculty members to submit their active or completed research papers."
+                    ]
+                };
+            }
+
+            const total = files.length;
+            const approved = files.filter(f => f.status === "approved").length;
+            const pending = files.filter(f => f.status === "pending").length;
+            const rejected = files.filter(f => f.status === "rejected").length;
+
+            const approvalRate = Math.round((approved / total) * 1000) / 10;
+            const pendingRate = Math.round((pending / total) * 1000) / 10;
+            const rejectedRate = Math.round((rejected / total) * 1000) / 10;
+
+            // Category breakdown & dominance calculation
+            const catMap = {};
+            files.forEach(f => {
+                const c = f.category || "Uncategorized";
+                catMap[c] = (catMap[c] || 0) + 1;
+            });
+            const sortedCategories = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+            const topCategory = sortedCategories[0] || ["General", 0];
+            const topCatShare = Math.round((topCategory[1] / total) * 100);
+
+            // Dynamic Findings List
+            const findings = [
+                {
+                    tag: "Publication Health",
+                    title: `${approvalRate}% Approval Rate`,
+                    desc: `${approved} of ${total} theses meet institutional criteria and are archived for faculty and student reference.`
+                },
+                {
+                    tag: "Disciplinary Focus",
+                    title: `Top Domain: "${topCategory[0]}"`,
+                    desc: `The "${topCategory[0]}" domain leads with ${topCategory[1]} thesis papers (${topCatShare}% share of submissions).`
+                },
+                {
+                    tag: "Evaluation Pipeline",
+                    title: pending > 0 ? `${pending} Pending Reviews` : "Zero Review Backlog",
+                    desc: pending > 0 
+                        ? `${pendingRate}% of repository volume is currently awaiting committee evaluation and administrator approval.`
+                        : "All submitted research papers have been reviewed and resolved by administrators."
+                },
+                {
+                    tag: "Readership & Faculty",
+                    title: (downloads && downloads.length > 0) ? `${downloads.length} Total Downloads` : `${users && users.length ? users.length : "Active"} Faculty Members`,
+                    desc: (downloads && downloads.length > 0)
+                        ? `Repository readership indicates strong student and faculty engagement across cataloged papers.`
+                        : `Active faculty community contributing and referencing academic research.`
+                }
+            ];
+
+            // Actionable Strategic Recommendations
+            const recommendations = [];
+
+            if (pending >= 5) {
+                recommendations.push(`Prioritize the ${pending} pending research files to shorten peer review latency and accelerate publishing.`);
+            }
+
+            if (sortedCategories.length >= 3) {
+                const leastCategories = sortedCategories.filter(c => c[1] <= 2);
+                if (leastCategories.length > 0) {
+                    const leastNames = leastCategories.slice(0, 2).map(c => `"${c[0]}"`).join(" and ");
+                    recommendations.push(`Encourage research submissions in underrepresented fields such as ${leastNames} to balance academic output.`);
+                }
+            }
+
+            if (rejected > 0) {
+                recommendations.push(`Review administrator remarks on ${rejected} rejected paper(s) with authors to assist them with formatting revisions.`);
+            }
+
+            if (recommendations.length === 0) {
+                recommendations.push("Maintain current institutional standards and conduct quarterly research dissemination seminars.");
+            }
+
+            const headline = `Institutional Research Health: ${approvalRate}% Approved (${approved}/${total} Theses)`;
+            const summaryText = `The REFMANSY repository currently monitors ${total} research document(s) across ${sortedCategories.length} academic disciplines. ${approved} paper(s) are officially approved, ${pending} are under review, and ${rejected} have been rejected with feedback. Leading domain: ${topCategory[0]} (${topCatShare}% share).`;
+
+            return {
+                headline,
+                summaryParagraph: summaryText,
+                summaryText,
+                total,
+                approved,
+                pending,
+                rejected,
+                approvalRate,
+                pendingRate,
+                rejectedRate,
+                totalVolume: total,
+                approvedCount: approved,
+                pendingCount: pending,
+                rejectedCount: rejected,
+                topCategory: topCategory[0],
+                topCategoryCount: topCategory[1],
+                topCategoryShare: topCatShare,
+                findings,
+                keyFindings: findings,
+                recommendations
+            };
         }
     }
 };
@@ -1143,6 +1508,7 @@ function normalizeResearchFile(row) {
         fileName: row.file_name || "Document.pdf",
         fileSize: row.file_size ? formatBytes(row.file_size) : "N/A",
         fileSizeBytes: row.file_size || 0,
+        fileHash: row.file_hash || null,
         fileType: row.file_type || "application/pdf",
         ownerId: row.owner_id,
         uploadedBy: row.profiles?.username || row.profiles?.full_name || "Faculty",
@@ -1179,5 +1545,110 @@ function formatBytes(bytes, decimals = 2) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 }
 
+// -----------------------------------------------------------------
+// Duplication Detection & String / Binary Hashing Algorithms
+// -----------------------------------------------------------------
+async function computeFileSha256(file) {
+    if (!file) return null;
+    try {
+        let arrayBuffer;
+        if (file instanceof ArrayBuffer) {
+            arrayBuffer = file;
+        } else if (file && file.buffer && (file.buffer instanceof ArrayBuffer || file instanceof Uint8Array)) {
+            arrayBuffer = file.buffer.slice(file.byteOffset || 0, (file.byteOffset || 0) + (file.byteLength || file.length));
+        } else if (file.arrayBuffer && typeof file.arrayBuffer === "function") {
+            arrayBuffer = await file.arrayBuffer();
+        } else if (typeof FileReader !== "undefined" && file instanceof Blob) {
+            arrayBuffer = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        } else {
+            return null;
+        }
+
+        // Native Web Crypto API SHA-256 Checksum
+        if (typeof crypto !== "undefined" && crypto.subtle && typeof crypto.subtle.digest === "function") {
+            const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+        }
+
+        // Fast fallback hashing for non-subtle contexts
+        let hash = 0;
+        const view = new Uint8Array(arrayBuffer);
+        for (let i = 0; i < view.length; i++) {
+            hash = ((hash << 5) - hash + view[i]) | 0;
+        }
+        return "fallback_" + Math.abs(hash).toString(16) + "_" + view.length;
+    } catch (e) {
+        console.warn("Could not compute SHA-256 file hash:", e);
+        return null;
+    }
+}
+
+function normalizeTitleText(text) {
+    if (!text) return "";
+    return text
+        .toLowerCase()
+        .replace(/['"“”‘’`]/g, "")
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function getBigrams(str) {
+    const bigrams = new Set();
+    const s = normalizeTitleText(str);
+    for (let i = 0; i < s.length - 1; i++) {
+        bigrams.add(s.substring(i, i + 2));
+    }
+    return bigrams;
+}
+
+function calculateTitleSimilarityScore(str1, str2) {
+    if (!str1 || !str2) return 0;
+    const norm1 = normalizeTitleText(str1);
+    const norm2 = normalizeTitleText(str2);
+
+    if (norm1 === norm2) return 1.0;
+    if (!norm1 || !norm2) return 0.0;
+
+    // 1. Bigram Dice Coefficient (Character-level similarity)
+    const bigrams1 = getBigrams(norm1);
+    const bigrams2 = getBigrams(norm2);
+    let intersectionCount = 0;
+
+    bigrams1.forEach(bg => {
+        if (bigrams2.has(bg)) intersectionCount++;
+    });
+
+    const totalBigrams = bigrams1.size + bigrams2.size;
+    const diceScore = totalBigrams > 0 ? (2.0 * intersectionCount) / totalBigrams : 0;
+
+    // 2. Token Jaccard Similarity (Word-level similarity)
+    const words1 = new Set(norm1.split(" ").filter(w => w.length > 2));
+    const words2 = new Set(norm2.split(" ").filter(w => w.length > 2));
+    let wordIntersect = 0;
+
+    words1.forEach(w => {
+        if (words2.has(w)) wordIntersect++;
+    });
+
+    const totalWords = words1.size + words2.size - wordIntersect;
+    const jaccardScore = totalWords > 0 ? wordIntersect / totalWords : 0;
+
+    // Weighted blend: 60% character n-gram, 40% word token match
+    return Math.round((diceScore * 0.6 + jaccardScore * 0.4) * 100) / 100;
+}
+
+// Expose utilities on refmansyApi
+refmansyApi.crypto = {
+    computeFileSha256
+};
+
 // Make globally available
 window.refmansyApi = refmansyApi;
+

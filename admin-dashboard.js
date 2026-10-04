@@ -1,5 +1,5 @@
 // ================================================================
-// Refmansy Admin Dashboard (Supabase Backend)
+// Refmansy Admin Dashboard (Supabase Backend + Storage & Retention)
 // ================================================================
 
 let currentUser = null;
@@ -26,6 +26,7 @@ async function initializeDashboard() {
 
         updateDashboardMetrics();
         renderRecentFiles();
+        await updateStorageCapacityMetrics();
     } catch (err) {
         console.error("Admin dashboard load error:", err);
     }
@@ -74,6 +75,67 @@ function updateDashboardMetrics() {
                 var(--rejected-gray, #cbd5e1) ${pendingPct}% 100%
             )`;
         }
+    }
+}
+
+async function updateStorageCapacityMetrics() {
+    try {
+        if (!window.refmansyApi?.backup?.getStorageQuotaInfo) return;
+
+        const quota = await window.refmansyApi.backup.getStorageQuotaInfo(100); // 100 GB Institutional quota
+
+        const storageUsedText = document.getElementById("storageUsedText");
+        if (storageUsedText) storageUsedText.textContent = quota.usedFormatted;
+
+        const storageMaxText = document.getElementById("storageMaxText");
+        if (storageMaxText) storageMaxText.textContent = quota.maxCapacityFormatted;
+
+        const storagePercentText = document.getElementById("storagePercentText");
+        if (storagePercentText) storagePercentText.textContent = `${quota.usedPercentage}% Used`;
+
+        const storageRemainingText = document.getElementById("storageRemainingText");
+        if (storageRemainingText) storageRemainingText.textContent = quota.remainingFormatted;
+
+        const storageProgressBar = document.getElementById("storageProgressBar");
+        if (storageProgressBar) {
+            storageProgressBar.style.width = `${Math.max(1, quota.usedPercentage)}%`;
+            if (quota.usedPercentage > 90) {
+                storageProgressBar.style.backgroundColor = "var(--rejected-red, #dc2626)";
+            } else if (quota.usedPercentage > 75) {
+                storageProgressBar.style.backgroundColor = "var(--pending-yellow, #d97706)";
+            } else {
+                storageProgressBar.style.backgroundColor = "var(--approved-green, #16a34a)";
+            }
+        }
+
+        const healthBadge = document.getElementById("storageHealthBadge");
+        if (healthBadge) {
+            if (quota.usedPercentage > 90) {
+                healthBadge.className = "quota-health-badge health-critical";
+                healthBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Critical (>90%)`;
+            } else if (quota.usedPercentage > 75) {
+                healthBadge.className = "quota-health-badge health-warning";
+                healthBadge.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Warning (>75%)`;
+            } else {
+                healthBadge.className = "quota-health-badge health-normal";
+                healthBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Healthy Capacity`;
+            }
+        }
+
+        // Theses Accommodations
+        const thesesAccommodatedText = document.getElementById("thesesAccommodatedText");
+        if (thesesAccommodatedText) thesesAccommodatedText.textContent = `~${quota.totalThesesCapacity.toLocaleString()}`;
+
+        const thesesCurrentCount = document.getElementById("thesesCurrentCount");
+        if (thesesCurrentCount) thesesCurrentCount.textContent = `${quota.currentThesesCount} Theses`;
+
+        const thesesRemainingSlots = document.getElementById("thesesRemainingSlots");
+        if (thesesRemainingSlots) thesesRemainingSlots.textContent = `~${quota.remainingThesesSlots.toLocaleString()} Slots`;
+
+        const thesesWorstCaseCap = document.getElementById("thesesWorstCaseCap");
+        if (thesesWorstCaseCap) thesesWorstCaseCap.textContent = `${quota.worstCaseCapacity.toLocaleString()} Theses`;
+    } catch (err) {
+        console.warn("Storage capacity metrics load notice:", err);
     }
 }
 

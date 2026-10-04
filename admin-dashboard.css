@@ -245,7 +245,6 @@ textarea {
     gap: 22px;
 }
 
-
 .header-user {
     display: flex;
     align-items: center;
@@ -530,6 +529,306 @@ textarea {
     font-size: 11px;
 }
 
+/* ================================================================
+   Institutional Storage Capacity & Retention Monitoring Styles
+   ================================================================ */
+
+.storage-capacity-card {
+    padding: 24px 26px;
+    margin-bottom: 25px;
+}
+
+.storage-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.storage-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.storage-icon-pill {
+    width: 40px;
+    height: 40px;
+    background-color: #cef5d8;
+    color: #1f9254;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.storage-manage-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    color: #14532d;
+    background-color: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.storage-manage-link:hover {
+    background-color: #1f9254;
+    color: #ffffff;
+    border-color: #1f9254;
+    box-shadow: 0 3px 8px rgba(31, 146, 84, 0.25);
+}
+
+.storage-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+}
+
+.storage-metric-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.metric-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.metric-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.quota-health-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 12px;
+}
+
+.health-normal {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.health-warning {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.health-critical {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+.capacity-rate-badge,
+.retention-rule-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    background-color: #e2e8f0;
+    padding: 2px 7px;
+    border-radius: 12px;
+}
+
+.quota-progress-wrapper {
+    margin: 6px 0 14px;
+}
+
+.quota-bar-track {
+    width: 100%;
+    height: 10px;
+    background-color: #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.quota-bar-fill {
+    height: 100%;
+    background-color: #16a34a;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+}
+
+.quota-numbers {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    color: #475569;
+}
+
+.quota-numbers strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.quota-pct {
+    font-weight: 700;
+    color: #15803d;
+}
+
+.quota-sub-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.quota-mini-stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.mini-label {
+    font-size: 10px;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.quota-mini-stat strong {
+    font-size: 11.5px;
+    color: #1e293b;
+}
+
+.accommodation-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.accommodation-total {
+    text-align: left;
+    padding-bottom: 6px;
+}
+
+.accommodation-total h4 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #1e3a8a;
+    line-height: 1.1;
+    margin-bottom: 2px;
+}
+
+.accommodation-total p {
+    font-size: 11.5px;
+    color: #64748b;
+}
+
+.accommodation-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11.5px;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #475569;
+}
+
+.breakdown-row span i {
+    width: 14px;
+    color: #1f9254;
+    margin-right: 4px;
+}
+
+.breakdown-row strong {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.retention-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.retention-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 8px 10px;
+}
+
+.retention-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.perm-icon {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.grace-icon {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.audit-icon {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.retention-item strong {
+    display: block;
+    font-size: 11.5px;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+
+.retention-item p {
+    font-size: 10.5px;
+    color: #64748b;
+    line-height: 1.35;
+}
+
+.retention-item p span {
+    font-weight: 600;
+    color: #0f172a;
+}
+
 /* Recent files */
 
 .recent-files {
@@ -595,9 +894,10 @@ tbody tr:hover {
 
 /* Status labels for JavaScript */
 
-.status-label {
+.status-label,
+.status-badge {
     display: inline-block;
-    padding: 6px 10px;
+    padding: 4px 10px;
     font-size: 11px;
     font-weight: bold;
     border-radius: 20px;
@@ -653,6 +953,10 @@ tbody tr:hover {
     }
 
     .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .storage-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -712,5 +1016,10 @@ tbody tr:hover {
 
     .dashboard-header h2 {
         font-size: 24px;
+    }
+
+    .storage-heading {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

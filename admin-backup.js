@@ -152,6 +152,7 @@ function setupEventListeners() {
 async function loadSystemStats() {
     try {
         currentStats = await window.refmansyApi.backup.getSystemStats();
+        const quota = await window.refmansyApi.backup.getStorageQuotaInfo(100);
 
         if (statTotalDbRows) {
             statTotalDbRows.textContent = currentStats.totalDatabaseRows.toLocaleString();
@@ -162,11 +163,11 @@ async function loadSystemStats() {
         }
 
         if (statTotalStorageSize) {
-            statTotalStorageSize.textContent = currentStats.storageFormattedSize;
+            statTotalStorageSize.textContent = `${currentStats.storageFormattedSize} / ${quota.maxCapacityFormatted}`;
         }
 
         if (statStorageCount) {
-            statStorageCount.textContent = `${currentStats.storageFilesCount} PDF Documents`;
+            statStorageCount.textContent = `${currentStats.storageFilesCount} PDFs • Capacity: ~${quota.totalThesesCapacity.toLocaleString()} Theses`;
         }
 
         if (statTotalAnalytics) {

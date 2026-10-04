@@ -39,13 +39,17 @@ async function loadReportData() {
             reportTable.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Generating analytics reports...</td></tr>`;
         }
 
-        const [files, categories] = await Promise.all([
+        const [files, categories, downloads, users] = await Promise.all([
             window.refmansyApi.research.getAllFiles(),
-            window.refmansyApi.categories.getAll()
+            window.refmansyApi.categories.getAll(),
+            window.refmansyApi.downloads.getAllDownloads().catch(e => { console.warn("Downloads fetch error:", e); return []; }),
+            window.refmansyApi.users.getAll().catch(e => { console.warn("Users fetch error:", e); return []; })
         ]);
 
         researchFiles = files;
         categoriesList = categories;
+        cachedDownloads = downloads;
+        cachedUsers = users;
 
         populateCategoryOptions();
         updateReportSummary();
@@ -207,6 +211,57 @@ function filterReport() {
     }
 
     renderReportTable(filtered);
+    updateExecutiveInsights(filtered);
+}
+
+function updateExecutiveInsights(files) {
+    if (!window.refmansyApi || !window.refmansyApi.analytics || !window.refmansyApi.analytics.generateExecutiveFindings) {
+        return;
+    }
+
+    const scopeBadge = document.getElementById("findingsScopeBadge");
+    const isFiltered = (files.length !== researchFiles.length);
+    if (scopeBadge) {
+        scopeBadge.innerHTML = isFiltered 
+            ? `<i class="fa-solid fa-filter"></i> Filtered View (${files.length} of ${researchFiles.length} records)`
+            : `<i class="fa-solid fa-layer-group"></i> All Repository Records (${files.length} total)`;
+    }
+
+    const insights = window.refmansyApi.analytics.generateExecutiveFindings(
+        files,
+        categoriesList,
+        cachedDownloads || [],
+        cachedUsers || []
+    );
+
+    const headlineEl = document.getElementById("findingsHeadline");
+    if (headlineEl) headlineEl.textContent = insights.headline;
+
+    const summaryEl = document.getElementById("findingsSummaryText");
+    if (summaryEl) summaryEl.textContent = insights.summaryParagraph;
+
+    // Update 4 finding cards
+    if (insights.findings && insights.findings.length >= 4) {
+        for (let i = 0; i < 4; i++) {
+            const idx = i + 1;
+            const titleEl = document.getElementById(`findingTitle${idx}`);
+            const descEl = document.getElementById(`findingDesc${idx}`);
+            if (titleEl) titleEl.textContent = insights.findings[i].title;
+            if (descEl) descEl.textContent = insights.findings[i].desc;
+        }
+    }
+
+    // Update recommendations
+    const recListEl = document.getElementById("findingsRecommendationsList");
+    if (recListEl) {
+        if (!insights.recommendations || insights.recommendations.length === 0) {
+            recListEl.innerHTML = `<li><i class="fa-solid fa-circle-check"></i> Repository metrics are optimal; continue standard monitoring.</li>`;
+        } else {
+            recListEl.innerHTML = insights.recommendations
+                .map(r => `<li><i class="fa-solid fa-arrow-right"></i> <span>${escapeHtml(r)}</span></li>`)
+                .join("");
+        }
+    }
 }
 
 function renderReportTable(files) {
