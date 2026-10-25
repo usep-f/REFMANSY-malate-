@@ -10,6 +10,9 @@ let selectedFile = null;
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
 const statusFilter = document.getElementById("statusFilter");
+const startDateInput = document.getElementById("startDate");
+const endDateInput = document.getElementById("endDate");
+const clearFiltersButton = document.getElementById("clearFiltersButton");
 const researchFilesTable = document.getElementById("researchFilesTable");
 const reviewModal = document.getElementById("reviewModal");
 const resultCount = document.getElementById("resultCount");
@@ -37,6 +40,11 @@ async function loadResearchFiles() {
             window.refmansyApi.research.getAllFiles(),
             window.refmansyApi.categories.getAll()
         ]);
+
+        // Assign stable, permanent displayId to each record based on initial order
+        files.forEach((file, index) => {
+            file.displayId = "RF-" + String(index + 1).padStart(4, "0");
+        });
 
         researchFiles = files;
 
@@ -82,25 +90,52 @@ function setupFilters() {
     if (searchInput) searchInput.addEventListener("input", filterResearchFiles);
     if (categoryFilter) categoryFilter.addEventListener("change", filterResearchFiles);
     if (statusFilter) statusFilter.addEventListener("change", filterResearchFiles);
+    if (startDateInput) startDateInput.addEventListener("change", filterResearchFiles);
+    if (endDateInput) endDateInput.addEventListener("change", filterResearchFiles);
+    if (clearFiltersButton) clearFiltersButton.addEventListener("click", clearFilters);
+}
+
+function clearFilters() {
+    if (searchInput) searchInput.value = "";
+    if (categoryFilter) categoryFilter.value = "all";
+    if (statusFilter) statusFilter.value = "all";
+    if (startDateInput) startDateInput.value = "";
+    if (endDateInput) endDateInput.value = "";
+    filterResearchFiles();
 }
 
 function filterResearchFiles() {
     const term = (searchInput?.value || "").trim().toLowerCase();
     const cat = categoryFilter?.value || "all";
     const stat = (statusFilter?.value || "all").toLowerCase();
+    const start = startDateInput?.value || "";
+    const end = endDateInput?.value || "";
 
     const filtered = researchFiles.filter(file => {
+        // Multi-field search: Research ID, Title, Researcher, Co-Researchers, Uploader, Keywords
         const matchesTerm =
             !term ||
+            (file.displayId && file.displayId.toLowerCase().includes(term)) ||
+            (file.id && file.id.toLowerCase().includes(term)) ||
             file.title.toLowerCase().includes(term) ||
             file.researcher.toLowerCase().includes(term) ||
+            (file.coResearchers && file.coResearchers.toLowerCase().includes(term)) ||
             file.uploadedBy.toLowerCase().includes(term) ||
             (file.keywords && file.keywords.toLowerCase().includes(term));
 
         const matchesCat = cat === "all" || file.category === cat;
         const matchesStat = stat === "all" || file.status === stat;
 
-        return matchesTerm && matchesCat && matchesStat;
+        // Date range filtering
+        let matchesDate = true;
+        if (start && file.createdAt) {
+            matchesDate = matchesDate && new Date(file.createdAt) >= new Date(start);
+        }
+        if (end && file.createdAt) {
+            matchesDate = matchesDate && new Date(file.createdAt) <= new Date(end + "T23:59:59");
+        }
+
+        return matchesTerm && matchesCat && matchesStat && matchesDate;
     });
 
     if (resultCount) {
@@ -121,7 +156,7 @@ function renderTable(files) {
 
     files.forEach((file, index) => {
         const row = document.createElement("tr");
-        const displayId = "RF-" + String(index + 1).padStart(4, "0");
+        const displayId = file.displayId || ("RF-" + String(index + 1).padStart(4, "0"));
 
         const statusBadge =
             file.status === "approved"
@@ -242,7 +277,7 @@ function openModal(file) {
     selectedFile = file;
 
     const mFileId = document.getElementById("modalFileId");
-    if (mFileId) mFileId.textContent = file.id;
+    if (mFileId) mFileId.textContent = file.displayId ? `${file.displayId} (${file.id})` : file.id;
     const mTitle = document.getElementById("modalTitle");
     if (mTitle) mTitle.textContent = file.title;
     const mRes = document.getElementById("modalResearcher");
