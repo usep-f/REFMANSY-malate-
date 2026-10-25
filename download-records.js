@@ -10,6 +10,9 @@ let downloadHistory = [];
 const searchInput = document.getElementById("searchInput");
 const categoryFilter = document.getElementById("categoryFilter");
 const yearFilter = document.getElementById("yearFilter");
+const startDate = document.getElementById("startDate");
+const endDate = document.getElementById("endDate");
+const clearFiltersButton = document.getElementById("clearFiltersButton");
 const downloadFilesTable = document.getElementById("downloadFilesTable");
 const downloadHistoryTable = document.getElementById("downloadHistoryTable");
 const clearHistoryButton = document.getElementById("clearHistoryButton");
@@ -31,7 +34,7 @@ async function initializePage() {
 async function loadPageData() {
     try {
         if (downloadFilesTable) {
-            downloadFilesTable.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available files...</td></tr>`;
+            downloadFilesTable.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading available files...</td></tr>`;
         }
         if (downloadHistoryTable) {
             downloadHistoryTable.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 1.5rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading download history...</td></tr>`;
@@ -42,6 +45,11 @@ async function loadPageData() {
             window.refmansyApi.downloads.getMyDownloads(currentProfile.id),
             window.refmansyApi.categories.getAll()
         ]);
+
+        // Assign stable, permanent displayId to each record based on initial order
+        (files || []).forEach((file, index) => {
+            file.displayId = "RF-" + String(index + 1).padStart(4, "0");
+        });
 
         approvedFiles = files;
         downloadHistory = history;
@@ -71,7 +79,7 @@ function updateSummary() {
 function populateCategoryFilter(categories) {
     if (!categoryFilter) return;
     categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
-    categories.forEach(cat => {
+    (categories || []).forEach(cat => {
         const opt = document.createElement("option");
         opt.value = cat.name;
         opt.textContent = cat.name;
@@ -95,22 +103,41 @@ function setupFilters() {
     if (searchInput) searchInput.addEventListener("input", filterAvailableFiles);
     if (categoryFilter) categoryFilter.addEventListener("change", filterAvailableFiles);
     if (yearFilter) yearFilter.addEventListener("change", filterAvailableFiles);
+    if (startDate) startDate.addEventListener("change", filterAvailableFiles);
+    if (endDate) endDate.addEventListener("change", filterAvailableFiles);
+    if (clearFiltersButton) clearFiltersButton.addEventListener("click", clearFilters);
 }
 
 function filterAvailableFiles() {
     const term = (searchInput?.value || "").trim().toLowerCase();
     const cat = categoryFilter?.value || "all";
     const yr = yearFilter?.value || "all";
+    const start = startDate?.value || "";
+    const end = endDate?.value || "";
 
     const filtered = approvedFiles.filter(file => {
         const matchTerm =
             !term ||
-            file.title.toLowerCase().includes(term) ||
-            file.researcher.toLowerCase().includes(term);
+            (file.displayId && file.displayId.toLowerCase().includes(term)) ||
+            (file.title && file.title.toLowerCase().includes(term)) ||
+            (file.researcher && file.researcher.toLowerCase().includes(term)) ||
+            (file.coResearchers && file.coResearchers.toLowerCase().includes(term)) ||
+            (file.keywords && file.keywords.toLowerCase().includes(term)) ||
+            (file.category && file.category.toLowerCase().includes(term));
 
         const matchCat = cat === "all" || file.category === cat;
         const matchYr = yr === "all" || String(file.publicationYear) === String(yr);
-        return matchTerm && matchCat && matchYr;
+
+        let matchesDate = true;
+        const fileDateStr = file.createdAt || file.dateUploaded;
+        if (start && fileDateStr) {
+            matchesDate = matchesDate && new Date(fileDateStr) >= new Date(start);
+        }
+        if (end && fileDateStr) {
+            matchesDate = matchesDate && new Date(fileDateStr) <= new Date(end + "T23:59:59");
+        }
+
+        return matchTerm && matchCat && matchYr && matchesDate;
     });
 
     if (resultCount) {
@@ -120,12 +147,21 @@ function filterAvailableFiles() {
     renderAvailableFiles(filtered);
 }
 
+function clearFilters() {
+    if (searchInput) searchInput.value = "";
+    if (categoryFilter) categoryFilter.value = "all";
+    if (yearFilter) yearFilter.value = "all";
+    if (startDate) startDate.value = "";
+    if (endDate) endDate.value = "";
+    filterAvailableFiles();
+}
+
 function renderAvailableFiles(files) {
     if (!downloadFilesTable) return;
     downloadFilesTable.innerHTML = "";
 
     if (!files || files.length === 0) {
-        downloadFilesTable.innerHTML = `<tr><td colspan="7" class="empty-message">No research files available for download.</td></tr>`;
+        downloadFilesTable.innerHTML = `<tr><td colspan="8" class="empty-message">No research files match your search or filter criteria.</td></tr>`;
         return;
     }
 
@@ -133,6 +169,7 @@ function renderAvailableFiles(files) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
+            <td><strong>${escapeHtml(file.displayId || "RF-0001")}</strong></td>
             <td><strong>${escapeHtml(file.title)}</strong></td>
             <td>${escapeHtml(file.researcher)}</td>
             <td>${escapeHtml(file.category)}</td>

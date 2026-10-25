@@ -12,6 +12,8 @@ const searchButton = document.getElementById("searchButton");
 const categoryFilter = document.getElementById("categoryFilter");
 const researchTypeFilter = document.getElementById("researchTypeFilter");
 const yearFilter = document.getElementById("yearFilter");
+const startDate = document.getElementById("startDate");
+const endDate = document.getElementById("endDate");
 const sortFilter = document.getElementById("sortFilter");
 const clearFiltersButton = document.getElementById("clearFiltersButton");
 const researchResults = document.getElementById("researchResults");
@@ -38,7 +40,14 @@ async function loadApprovedFiles() {
             researchResults.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Loading approved research papers...</div>`;
         }
 
-        approvedFiles = await window.refmansyApi.research.getApprovedFiles();
+        const files = await window.refmansyApi.research.getApprovedFiles();
+
+        // Assign stable, permanent displayId to each record based on initial order
+        (files || []).forEach((file, index) => {
+            file.displayId = "RF-" + String(index + 1).padStart(4, "0");
+        });
+
+        approvedFiles = files;
 
         await loadCategoryFilter();
         loadYearFilter();
@@ -57,7 +66,7 @@ async function loadCategoryFilter() {
         const categories = await window.refmansyApi.categories.getAll();
         categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
 
-        categories.forEach(cat => {
+        (categories || []).forEach(cat => {
             const opt = document.createElement("option");
             opt.value = cat.name;
             opt.textContent = cat.name;
@@ -102,6 +111,8 @@ function setupFilters() {
     if (categoryFilter) categoryFilter.addEventListener("change", filterSearchResults);
     if (researchTypeFilter) researchTypeFilter.addEventListener("change", filterSearchResults);
     if (yearFilter) yearFilter.addEventListener("change", filterSearchResults);
+    if (startDate) startDate.addEventListener("change", filterSearchResults);
+    if (endDate) endDate.addEventListener("change", filterSearchResults);
     if (sortFilter) sortFilter.addEventListener("change", filterSearchResults);
 
     if (clearFiltersButton) {
@@ -110,6 +121,8 @@ function setupFilters() {
             if (categoryFilter) categoryFilter.value = "all";
             if (researchTypeFilter) researchTypeFilter.value = "all";
             if (yearFilter) yearFilter.value = "all";
+            if (startDate) startDate.value = "";
+            if (endDate) endDate.value = "";
             if (sortFilter) sortFilter.value = "newest";
             filterSearchResults();
         });
@@ -121,13 +134,17 @@ function filterSearchResults() {
     const cat = categoryFilter?.value || "all";
     const rType = researchTypeFilter?.value || "all";
     const yr = yearFilter?.value || "all";
+    const start = startDate?.value || "";
+    const end = endDate?.value || "";
     const sort = sortFilter?.value || "newest";
 
     let filtered = approvedFiles.filter(file => {
         const matchesTerm =
             !term ||
-            file.title.toLowerCase().includes(term) ||
-            file.researcher.toLowerCase().includes(term) ||
+            (file.displayId && file.displayId.toLowerCase().includes(term)) ||
+            (file.title && file.title.toLowerCase().includes(term)) ||
+            (file.researcher && file.researcher.toLowerCase().includes(term)) ||
+            (file.coResearchers && file.coResearchers.toLowerCase().includes(term)) ||
             (file.keywords && file.keywords.toLowerCase().includes(term)) ||
             (file.department && file.department.toLowerCase().includes(term));
 
@@ -135,7 +152,16 @@ function filterSearchResults() {
         const matchesType = rType === "all" || file.researchType === rType;
         const matchesYr = yr === "all" || String(file.publicationYear) === String(yr);
 
-        return matchesTerm && matchesCat && matchesType && matchesYr;
+        let matchesDate = true;
+        const fileDateStr = file.createdAt || file.dateUploaded;
+        if (start && fileDateStr) {
+            matchesDate = matchesDate && new Date(fileDateStr) >= new Date(start);
+        }
+        if (end && fileDateStr) {
+            matchesDate = matchesDate && new Date(fileDateStr) <= new Date(end + "T23:59:59");
+        }
+
+        return matchesTerm && matchesCat && matchesType && matchesYr && matchesDate;
     });
 
     if (sort === "oldest") {
@@ -178,7 +204,10 @@ function renderResults(files) {
 
         card.innerHTML = `
             <div class="paper-card-body">
-                <span class="paper-category">${escapeHtml(file.category)}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="paper-category">${escapeHtml(file.category)}</span>
+                    <strong style="color: #64748b; font-size: 11px; background: #f1f5f9; padding: 2px 7px; border-radius: 4px;">${escapeHtml(file.displayId || "RF-0001")}</strong>
+                </div>
                 <h3 class="paper-title">${escapeHtml(file.title)}</h3>
                 <p class="paper-author"><i class="fa-solid fa-user-pen"></i> ${escapeHtml(file.researcher)} (${file.publicationYear})</p>
                 <p class="paper-abstract">${escapeHtml(file.description || "No abstract provided.")}</p>

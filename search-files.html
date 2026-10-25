@@ -125,7 +125,7 @@
                     <input
                         type="search"
                         id="searchInput"
-                        placeholder="Search by title, researcher, keyword, or department..."
+                        placeholder="Search by ID, title, researcher, keyword, or department..."
                     >
 
                     <button type="button" id="searchButton">
@@ -165,12 +165,23 @@
                         <option value="all">All Years</option>
                     </select>
 
+                    <div class="date-filter">
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="date-filter">
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate">
+                    </div>
+
                     <button
                         type="button"
                         id="clearFiltersButton"
                         class="clear-button"
+                        title="Reset all filters"
                     >
-                        Clear Filters
+                        <i class="fa-solid fa-rotate-left"></i> Clear
                     </button>
 
                 </div>

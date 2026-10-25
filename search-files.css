@@ -326,6 +326,7 @@ textarea {
 
 .search-filters {
     display: flex;
+    align-items: flex-end;
     gap: 10px;
     flex-wrap: wrap;
 }
@@ -346,20 +347,56 @@ textarea {
     border-color: var(--primary-blue);
 }
 
+.date-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.date-filter label {
+    color: #788189;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.date-filter input {
+    height: 41px;
+    padding: 0 10px;
+    color: #59626a;
+    background-color: #ffffff;
+    font-size: 12px;
+    border: 1px solid #dce3e9;
+    border-radius: 7px;
+    outline: none;
+}
+
+.date-filter input:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(31, 146, 84, 0.15);
+}
+
 .clear-button {
     height: 41px;
     padding: 0 14px;
-    color: #68727a;
-    background-color: #edf0f2;
+    color: #59626a;
+    background-color: #edf1f4;
     font-size: 12px;
-    border: none;
+    font-weight: 500;
+    border: 1px solid #dce3e9;
     border-radius: 7px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
 }
 
 .clear-button:hover {
     color: #ffffff;
-    background-color: #7d8993;
+    background-color: #64748b;
+    border-color: #64748b;
 }
 
 /* Results */

@@ -10,6 +10,13 @@ let categoriesList = [];
 
 const facultyFilesTable = document.getElementById("facultyFilesTable");
 const statusUpdatesContainer = document.getElementById("statusUpdates");
+const searchInput = document.getElementById("searchInput");
+const categoryFilter = document.getElementById("categoryFilter");
+const statusFilter = document.getElementById("statusFilter");
+const startDate = document.getElementById("startDate");
+const endDate = document.getElementById("endDate");
+const clearFiltersButton = document.getElementById("clearFiltersButton");
+const resultCount = document.getElementById("resultCount");
 
 // Auth Guard
 window.refmansyAuthGuard.init("faculty", function (profile, user) {
@@ -21,7 +28,7 @@ window.refmansyAuthGuard.init("faculty", function (profile, user) {
 async function initializeDashboard() {
     try {
         if (facultyFilesTable) {
-            facultyFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table"><i class="fa-solid fa-spinner fa-spin"></i> Loading dashboard data...</td></tr>`;
+            facultyFilesTable.innerHTML = `<tr><td colspan="7" class="empty-table"><i class="fa-solid fa-spinner fa-spin"></i> Loading dashboard data...</td></tr>`;
         }
 
         const [myFiles, approvedFiles, categories] = await Promise.all([
@@ -30,13 +37,20 @@ async function initializeDashboard() {
             window.refmansyApi.categories.getAll()
         ]);
 
+        // Assign stable, permanent displayId to each record based on initial order
+        myFiles.forEach((file, index) => {
+            file.displayId = "RF-" + String(index + 1).padStart(4, "0");
+        });
+
         facultyFiles = myFiles;
         approvedSystemFiles = approvedFiles;
         categoriesList = categories;
 
         updateDashboardMetrics();
         renderStatusUpdates();
-        renderRecentFilesTable();
+        populateCategoryFilter();
+        setupFilters();
+        filterFacultyFiles();
     } catch (err) {
         console.error("Dashboard data load error:", err);
     }
@@ -59,6 +73,73 @@ function updateDashboardMetrics() {
 
     const rejectedEl = document.getElementById("totalRejected");
     if (rejectedEl) rejectedEl.textContent = rejected;
+}
+
+function populateCategoryFilter() {
+    if (!categoryFilter) return;
+    categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
+    (categoriesList || []).forEach(cat => {
+        const opt = document.createElement("option");
+        opt.value = cat.name;
+        opt.textContent = cat.name;
+        categoryFilter.appendChild(opt);
+    });
+}
+
+function setupFilters() {
+    if (searchInput) searchInput.addEventListener("input", filterFacultyFiles);
+    if (categoryFilter) categoryFilter.addEventListener("change", filterFacultyFiles);
+    if (statusFilter) statusFilter.addEventListener("change", filterFacultyFiles);
+    if (startDate) startDate.addEventListener("change", filterFacultyFiles);
+    if (endDate) endDate.addEventListener("change", filterFacultyFiles);
+    if (clearFiltersButton) clearFiltersButton.addEventListener("click", clearFilters);
+}
+
+function filterFacultyFiles() {
+    const term = (searchInput?.value || "").trim().toLowerCase();
+    const cat = categoryFilter?.value || "all";
+    const stat = (statusFilter?.value || "all").toLowerCase();
+    const start = startDate?.value || "";
+    const end = endDate?.value || "";
+
+    const filtered = facultyFiles.filter(file => {
+        const matchesTerm =
+            !term ||
+            (file.displayId && file.displayId.toLowerCase().includes(term)) ||
+            (file.title && file.title.toLowerCase().includes(term)) ||
+            (file.category && file.category.toLowerCase().includes(term)) ||
+            (file.fileName && file.fileName.toLowerCase().includes(term)) ||
+            (file.keywords && file.keywords.toLowerCase().includes(term));
+
+        const matchesCat = cat === "all" || file.category === cat;
+        const matchesStat = stat === "all" || (file.status || "").toLowerCase() === stat;
+
+        let matchesDate = true;
+        const fileDateStr = file.createdAt || file.dateUploaded;
+        if (start && fileDateStr) {
+            matchesDate = matchesDate && new Date(fileDateStr) >= new Date(start);
+        }
+        if (end && fileDateStr) {
+            matchesDate = matchesDate && new Date(fileDateStr) <= new Date(end + "T23:59:59");
+        }
+
+        return matchesTerm && matchesCat && matchesStat && matchesDate;
+    });
+
+    if (resultCount) {
+        resultCount.textContent = `Showing ${filtered.length} of ${facultyFiles.length} submissions`;
+    }
+
+    renderRecentFilesTable(filtered);
+}
+
+function clearFilters() {
+    if (searchInput) searchInput.value = "";
+    if (categoryFilter) categoryFilter.value = "all";
+    if (statusFilter) statusFilter.value = "all";
+    if (startDate) startDate.value = "";
+    if (endDate) endDate.value = "";
+    filterFacultyFiles();
 }
 
 function renderStatusUpdates() {
@@ -102,18 +183,18 @@ function renderStatusUpdates() {
     });
 }
 
-function renderRecentFilesTable() {
+function renderRecentFilesTable(filesToRender) {
     if (!facultyFilesTable) return;
     facultyFilesTable.innerHTML = "";
 
-    const recent = facultyFiles.slice(0, 5);
+    const list = Array.isArray(filesToRender) ? filesToRender : facultyFiles;
 
-    if (recent.length === 0) {
-        facultyFilesTable.innerHTML = `<tr><td colspan="6" class="empty-table">You have not uploaded any research files yet.</td></tr>`;
+    if (list.length === 0) {
+        facultyFilesTable.innerHTML = `<tr><td colspan="7" class="empty-table">No research files match your search or filter criteria.</td></tr>`;
         return;
     }
 
-    recent.forEach(file => {
+    list.forEach(file => {
         const row = document.createElement("tr");
 
         const statusBadge =
@@ -124,6 +205,7 @@ function renderRecentFilesTable() {
                 : `<span class="status-badge status-pending">Pending</span>`;
 
         row.innerHTML = `
+            <td><strong>${escapeHtml(file.displayId || "RF-0001")}</strong></td>
             <td>
                 <strong>${escapeHtml(file.title)}</strong>
                 <br><small style="color: #64748b;">${escapeHtml(file.fileName || "Document.pdf")}</small>

@@ -266,12 +266,62 @@
 
                 </div>
 
+                <!-- Search and Filters -->
+                <div class="table-controls">
+
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+
+                        <input
+                            type="search"
+                            id="searchInput"
+                            placeholder="Search by ID, title, or keyword..."
+                        >
+                    </div>
+
+                    <select id="categoryFilter">
+                        <option value="all">All Categories</option>
+                    </select>
+
+                    <select id="statusFilter">
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+
+                    <div class="date-filter">
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="date-filter">
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate">
+                    </div>
+
+                    <button
+                        type="button"
+                        id="clearFiltersButton"
+                        class="clear-button"
+                        title="Reset all filters"
+                    >
+                        <i class="fa-solid fa-rotate-left"></i> Clear
+                    </button>
+
+                </div>
+
+                <div class="table-meta">
+                    <span id="resultCount">Showing 0 submissions</span>
+                </div>
+
                 <div class="table-container">
 
                     <table>
 
                         <thead>
                             <tr>
+                                <th>Research ID</th>
                                 <th>Research Title</th>
                                 <th>Category</th>
                                 <th>Date Uploaded</th>
@@ -284,7 +334,7 @@
                         <tbody id="facultyFilesTable">
 
                             <tr>
-                                <td colspan="6" class="empty-table">
+                                <td colspan="7" class="empty-table">
                                     You have not uploaded any research files.
                                 </td>
                             </tr>

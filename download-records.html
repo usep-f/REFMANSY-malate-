@@ -183,7 +183,7 @@
                         <input
                             type="search"
                             id="searchInput"
-                            placeholder="Search title or researcher..."
+                            placeholder="Search by ID, title, researcher, or keyword..."
                         >
                     </div>
 
@@ -195,6 +195,25 @@
                         <option value="all">All Years</option>
                     </select>
 
+                    <div class="date-filter">
+                        <label for="startDate">From</label>
+                        <input type="date" id="startDate">
+                    </div>
+
+                    <div class="date-filter">
+                        <label for="endDate">To</label>
+                        <input type="date" id="endDate">
+                    </div>
+
+                    <button
+                        type="button"
+                        id="clearFiltersButton"
+                        class="clear-button"
+                        title="Reset all filters"
+                    >
+                        <i class="fa-solid fa-rotate-left"></i> Clear
+                    </button>
+
                 </div>
 
                 <div class="table-container">
@@ -203,6 +222,7 @@
 
                         <thead>
                             <tr>
+                                <th>Research ID</th>
                                 <th>Research Title</th>
                                 <th>Researcher</th>
                                 <th>Category</th>
@@ -216,7 +236,7 @@
                         <tbody id="downloadFilesTable">
 
                             <tr>
-                                <td colspan="7" class="empty-message">
+                                <td colspan="8" class="empty-message">
                                     No approved documents are available.
                                 </td>
                             </tr>
