@@ -51,16 +51,13 @@ A primary action button is added to the header controls:
 ### 5.2 Export Configuration Modal (`#exportReportModal`)
 The modal consists of:
 1. **Modal Header**: Title (*"Export PDF Report"*) with subtitle and close button.
-2. **Quick Presets Bar**: One-click selection pills:
-   * **[All Modules]**: Checks all 4 modules.
-   * **[Executive Only]**: Checks Module A only.
-   * **[Catalog Only]**: Checks Module B only.
-   * **[Readership Audit]**: Checks Modules A & C.
+2. **Simple Instructions Bar**: Clean guidance explaining how to pick sections and export.
 3. **Module Selection Cards**:
    * **Module A (Executive Summary & Analytics)**: KPI stat cards, status donut chart, and category distribution bar chart.
-   * **Module B (Research Catalog)**: Table of research submissions with sub-option toggle:
-     * *Current Filtered Results (X records)*
-     * *All Research Submissions (Total records)*
+   * **Module B (Research Submissions)**: Table of research submissions with sub-option toggle:
+     * *Approved Submissions (Approved count)*
+     * *Pending Submissions (Pending count)*
+     * *All Submissions (Total count)*
    * **Module C (Download & Readership Audit)**: Total paper downloads, top 5 most read papers, and physical hard-copy QR scan metrics vs. faculty portal downloads.
    * **Module D (Faculty & Department Productivity)**: Submission counts by academic department/strand and active researcher contributor tally.
 4. **Footer Action Bar**:

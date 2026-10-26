@@ -128,15 +128,6 @@
                         Export CSV
                     </button>
 
-                    <button
-                        type="button"
-                        id="printReportButton"
-                        class="print-button"
-                    >
-                        <i class="fa-solid fa-print"></i>
-                        Print Report
-                    </button>
-
                     <div class="header-user">
 
                         <div>
@@ -508,7 +499,7 @@
                 </div>
                 <div>
                     <h3>Export PDF Report</h3>
-                    <p>Customize modules and generate an official institutional research dossier.</p>
+                    <p>Select the sections to include in your PDF report.</p>
                 </div>
                 <button type="button" id="closeExportModalBtn" class="modal-close-btn" aria-label="Close modal">
                     <i class="fa-solid fa-xmark"></i>
@@ -516,15 +507,10 @@
             </div>
 
             <div class="modal-body">
-                <!-- Quick Presets -->
-                <div class="presets-container">
-                    <span class="presets-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Quick Presets:</span>
-                    <div class="preset-pills">
-                        <button type="button" class="preset-pill active" data-preset="all">All Modules</button>
-                        <button type="button" class="preset-pill" data-preset="executive">Executive Only</button>
-                        <button type="button" class="preset-pill" data-preset="catalog">Catalog Only</button>
-                        <button type="button" class="preset-pill" data-preset="readership">Readership Audit</button>
-                    </div>
+                <!-- Simple Instructions -->
+                <div class="modal-instructions-box">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Check the sections you want in your report, choose which submissions to include under Module B, then click <strong>Download PDF</strong>.</span>
                 </div>
 
                 <!-- Module Selection Cards Grid -->
@@ -539,10 +525,10 @@
                         </div>
                         <div class="module-card-content">
                             <div class="module-card-header">
-                                <h4>Module A: Executive Summary & Visual Analytics</h4>
-                                <span class="module-tag">Core</span>
+                                <h4>Module A: Executive Summary</h4>
+                                <span class="module-tag">Overview</span>
                             </div>
-                            <p>KPI stats overview, status distribution donut chart, and academic category breakdown.</p>
+                            <p>Key totals, approval status chart, and category breakdown.</p>
                         </div>
                     </label>
 
@@ -556,22 +542,26 @@
                         </div>
                         <div class="module-card-content">
                             <div class="module-card-header">
-                                <h4>Module B: Research Submissions Catalog</h4>
-                                <span class="module-tag">Tabular</span>
+                                <h4>Module B: Research Submissions</h4>
+                                <span class="module-tag">Table</span>
                             </div>
-                            <p>Comprehensive catalog of research submissions with IDs, lead researchers, and approval dates.</p>
+                            <p>List of research papers with IDs, authors, categories, and review dates.</p>
                             
                             <!-- Catalog Scope Radio Options -->
                             <div class="catalog-scope-box" onclick="event.stopPropagation()">
-                                <span class="scope-label">Records to include:</span>
+                                <span class="scope-label">Submissions to include:</span>
                                 <div class="scope-options">
                                     <label class="scope-radio-label">
-                                        <input type="radio" name="catalogScope" value="filtered" checked>
-                                        <span>Current Filtered View (<strong id="filteredCountBadge">0</strong> files)</span>
+                                        <input type="radio" name="catalogScope" value="approved" checked>
+                                        <span>Approved (<strong id="approvedCountBadge">0</strong> files)</span>
+                                    </label>
+                                    <label class="scope-radio-label">
+                                        <input type="radio" name="catalogScope" value="pending">
+                                        <span>Pending (<strong id="pendingCountBadge">0</strong> files)</span>
                                     </label>
                                     <label class="scope-radio-label">
                                         <input type="radio" name="catalogScope" value="all">
-                                        <span>All Submissions (<strong id="totalCountBadge">0</strong> files)</span>
+                                        <span>All (<strong id="totalCountBadge">0</strong> files)</span>
                                     </label>
                                 </div>
                             </div>
@@ -588,10 +578,10 @@
                         </div>
                         <div class="module-card-content">
                             <div class="module-card-header">
-                                <h4>Module C: Readership & Physical QR Scan Audit</h4>
-                                <span class="module-tag">Audit</span>
+                                <h4>Module C: Readership & QR Scans</h4>
+                                <span class="module-tag">Activity</span>
                             </div>
-                            <p>Download volume metrics, top accessed research documents, and hard-copy QR scan activity.</p>
+                            <p>Download counts, most-viewed papers, and printed QR code scans.</p>
                         </div>
                     </label>
 
@@ -605,11 +595,12 @@
                         </div>
                         <div class="module-card-content">
                             <div class="module-card-header">
-                                <h4>Module D: Faculty & Department Productivity</h4>
-                                <span class="module-tag">Analytics</span>
+                                <h4>Module D: Department & Author Activity</h4>
+                                <span class="module-tag">Breakdown</span>
                             </div>
-                            <p>Submissions and approval rates grouped by academic department/strand with author metrics.</p>
+                            <p>Submissions and approval rates grouped by department, strand, and author.</p>
                         </div>
+                    </label>
                 </div>
 
                 <div id="exportModalAlert" class="export-alert" style="display: none;"></div>
@@ -619,7 +610,7 @@
                 <button type="button" id="cancelExportBtn" class="btn-secondary">Cancel</button>
                 <button type="button" id="generatePdfBtn" class="btn-primary-pdf">
                     <i class="fa-solid fa-file-pdf"></i>
-                    <span>Generate & Download PDF</span>
+                    <span>Download PDF</span>
                 </button>
             </div>
         </div>

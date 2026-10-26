@@ -498,21 +498,40 @@
         }
 
         // -------------------------------------------------------------
-        // MODULE B: RESEARCH CATALOG & SUBMISSIONS TABLE
+        // MODULE B: RESEARCH SUBMISSIONS TABLE
         // -------------------------------------------------------------
         if (config.modules.catalog) {
-            const targetFiles = config.catalogScope === "all" ? allFiles : filteredFiles;
-            const scopeLabel = config.catalogScope === "all"
-                ? `All Submissions Archive (${targetFiles.length} Records)`
-                : `Filtered Search View (${targetFiles.length} Records)`;
+            let targetFiles = allFiles;
+            let scopeLabel = `All Submissions (${allFiles.length} Records)`;
 
-            drawSectionHeading("Module B: Research Submissions Inventory", scopeLabel);
+            const selectedScope = (config.catalogScope || "approved").toLowerCase();
+
+            if (selectedScope === "approved") {
+                targetFiles = allFiles.filter(f => (f.status || "").toLowerCase() === "approved");
+                scopeLabel = `Approved Submissions (${targetFiles.length} Records)`;
+            } else if (selectedScope === "pending") {
+                targetFiles = allFiles.filter(f => (f.status || "").toLowerCase() === "pending");
+                scopeLabel = `Pending Submissions (${targetFiles.length} Records)`;
+            } else if (selectedScope === "filtered") {
+                targetFiles = filteredFiles;
+                scopeLabel = `Filtered Results (${targetFiles.length} Records)`;
+            } else {
+                targetFiles = allFiles;
+                scopeLabel = `All Submissions (${allFiles.length} Records)`;
+            }
+
+            drawSectionHeading("Module B: Research Submissions", scopeLabel);
 
             if (targetFiles.length === 0) {
                 doc.setFont("helvetica", "italic");
                 doc.setFontSize(9);
                 doc.setTextColor(148, 163, 184);
-                doc.text("No research records found matching the designated scope.", marginX, currentY + 4);
+                const emptyMsg = selectedScope === "approved"
+                    ? "No approved research submissions found."
+                    : selectedScope === "pending"
+                    ? "No pending research submissions found."
+                    : "No research records found matching the designated scope.";
+                doc.text(emptyMsg, marginX, currentY + 4);
                 currentY += 12;
             } else {
                 const tableRows = targetFiles.map((file, idx) => {

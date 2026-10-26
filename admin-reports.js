@@ -203,15 +203,28 @@ function filterReport() {
 
     filteredResearchFiles = filtered;
 
-    const filteredBadge = document.getElementById("filteredCountBadge");
-    if (filteredBadge) filteredBadge.textContent = filtered.length;
-
     if (resultCount) {
         resultCount.textContent = `Showing ${filtered.length} research file${filtered.length === 1 ? "" : "s"}`;
     }
 
     renderReportTable(filtered);
     updateExecutiveInsights(filtered);
+    updateExportModalCounts();
+}
+
+function updateExportModalCounts() {
+    const approvedCount = researchFiles.filter(f => (f.status || "").toLowerCase() === "approved").length;
+    const pendingCount = researchFiles.filter(f => (f.status || "").toLowerCase() === "pending").length;
+    const totalCount = researchFiles.length;
+
+    const approvedBadge = document.getElementById("approvedCountBadge");
+    if (approvedBadge) approvedBadge.textContent = approvedCount;
+
+    const pendingBadge = document.getElementById("pendingCountBadge");
+    if (pendingBadge) pendingBadge.textContent = pendingCount;
+
+    const totalBadge = document.getElementById("totalCountBadge");
+    if (totalBadge) totalBadge.textContent = totalCount;
 }
 
 function updateExecutiveInsights(files) {
@@ -305,13 +318,6 @@ function displayGeneratedDate() {
 }
 
 function setupReportButtons() {
-    const printBtn = document.getElementById("printReportButton");
-    if (printBtn) {
-        printBtn.addEventListener("click", function () {
-            window.print();
-        });
-    }
-
     const exportBtn = document.getElementById("exportCsvButton");
     if (exportBtn) {
         exportBtn.addEventListener("click", exportToCSV);
@@ -330,7 +336,6 @@ function setupPdfExportModal() {
 
     if (!openBtn || !modal) return;
 
-    const presetPills = modal.querySelectorAll(".preset-pill");
     const moduleCheckboxes = {
         executive: document.getElementById("moduleExecutive"),
         catalog: document.getElementById("moduleCatalog"),
@@ -339,11 +344,7 @@ function setupPdfExportModal() {
     };
 
     function openModal() {
-        const filteredBadge = document.getElementById("filteredCountBadge");
-        if (filteredBadge) filteredBadge.textContent = filteredResearchFiles.length;
-
-        const totalBadge = document.getElementById("totalCountBadge");
-        if (totalBadge) totalBadge.textContent = researchFiles.length;
+        updateExportModalCounts();
 
         if (alertBox) {
             alertBox.style.display = "none";
@@ -374,51 +375,8 @@ function setupPdfExportModal() {
                 if (cb.checked) card.classList.add("active");
                 else card.classList.remove("active");
             }
-            clearActivePresetPill();
         });
     });
-
-    function clearActivePresetPill() {
-        presetPills.forEach(p => p.classList.remove("active"));
-    }
-
-    // Presets handling
-    presetPills.forEach(pill => {
-        pill.addEventListener("click", () => {
-            clearActivePresetPill();
-            pill.classList.add("active");
-            const preset = pill.getAttribute("data-preset");
-
-            if (preset === "all") {
-                setModuleStates({ executive: true, catalog: true, downloads: true, faculty: true });
-            } else if (preset === "executive") {
-                setModuleStates({ executive: true, catalog: false, downloads: false, faculty: false });
-            } else if (preset === "catalog") {
-                setModuleStates({ executive: false, catalog: true, downloads: false, faculty: false });
-            } else if (preset === "readership") {
-                setModuleStates({ executive: true, catalog: false, downloads: true, faculty: false });
-            }
-        });
-    });
-
-    function setModuleStates({ executive, catalog, downloads, faculty }) {
-        if (moduleCheckboxes.executive) {
-            moduleCheckboxes.executive.checked = executive;
-            moduleCheckboxes.executive.closest(".module-card")?.classList.toggle("active", executive);
-        }
-        if (moduleCheckboxes.catalog) {
-            moduleCheckboxes.catalog.checked = catalog;
-            moduleCheckboxes.catalog.closest(".module-card")?.classList.toggle("active", catalog);
-        }
-        if (moduleCheckboxes.downloads) {
-            moduleCheckboxes.downloads.checked = downloads;
-            moduleCheckboxes.downloads.closest(".module-card")?.classList.toggle("active", downloads);
-        }
-        if (moduleCheckboxes.faculty) {
-            moduleCheckboxes.faculty.checked = faculty;
-            moduleCheckboxes.faculty.closest(".module-card")?.classList.toggle("active", faculty);
-        }
-    }
 
     // Generate PDF action
     if (generateBtn) {
@@ -438,17 +396,17 @@ function setupPdfExportModal() {
             const anySelected = Object.values(modules).some(Boolean);
             if (!anySelected) {
                 if (alertBox) {
-                    alertBox.textContent = "Please select at least one report module to export.";
+                    alertBox.textContent = "Select at least one section to export.";
                     alertBox.style.display = "block";
                 }
                 return;
             }
 
-            const catalogScope = document.querySelector('input[name="catalogScope"]:checked')?.value || "filtered";
+            const catalogScope = document.querySelector('input[name="catalogScope"]:checked')?.value || "approved";
 
             const originalHtml = generateBtn.innerHTML;
             generateBtn.disabled = true;
-            generateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Compiling PDF Report...</span>`;
+            generateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Generating PDF...</span>`;
 
             try {
                 // Fetch supplemental data if needed
