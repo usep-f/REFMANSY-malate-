@@ -178,7 +178,7 @@ function renderAvailableFiles(files) {
             <td>${file.fileSize || "PDF"}</td>
             <td>
                 <button type="button" class="btn-download-action download-action-btn">
-                    <i class="fa-solid fa-download"></i> Download
+                    <i class="fa-regular fa-file-pdf"></i> View
                 </button>
             </td>
         `;
@@ -186,7 +186,7 @@ function renderAvailableFiles(files) {
         row.querySelector(".download-action-btn").addEventListener("click", async () => {
             if (file.filePath) {
                 await window.refmansyApi.downloads.logDownload(file.id, file.title, file.category);
-                await window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
+                await window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
                 downloadHistory = await window.refmansyApi.downloads.getMyDownloads(currentProfile.id);
                 updateSummary();
                 renderDownloadHistory(downloadHistory);

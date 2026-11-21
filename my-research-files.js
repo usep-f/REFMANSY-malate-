@@ -145,18 +145,17 @@ function renderTable(files) {
                     </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="Download File" style="background-color: var(--dark-blue); margin-left: 5px;">
-                                <i class="fa-solid fa-download"></i>
+                            ? `<button type="button" class="view-button download-btn" title="View File" style="background-color: var(--dark-blue); margin-left: 5px;">
+                                <i class="fa-regular fa-file-pdf"></i> View
                                </button>`
                             : ""
                     }
-                    ${
-                        (file.status === "pending" || file.status === "rejected")
-                            ? `<button type="button" class="view-button delete-row-btn" title="Delete Submission" style="background-color: #ef4444; margin-left: 5px;">
+                    ${(file.status === "pending" || file.status === "rejected")
+                ? `<button type="button" class="view-button delete-row-btn" title="Delete Submission" style="background-color: #ef4444; margin-left: 5px;">
                                 <i class="fa-solid fa-trash"></i>
                                </button>`
-                            : ""
-                    }
+                : ""
+            }
                 </div>
             </td>
         `;
@@ -166,7 +165,7 @@ function renderTable(files) {
         const dlBtn = row.querySelector(".download-btn");
         if (dlBtn) {
             dlBtn.addEventListener("click", async () => {
-                await window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
+                await window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
             });
         }
 
@@ -238,7 +237,7 @@ function setupModal() {
     if (viewBtn) {
         viewBtn.addEventListener("click", async function () {
             if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
+                await window.refmansyApi.storage.openDocumentInNewTab(selectedFile.filePath);
             } else {
                 alert("No file attached to this research submission.");
             }

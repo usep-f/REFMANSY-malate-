@@ -145,10 +145,9 @@ function setupModal() {
     if (viewDocBtn) {
         viewDocBtn.addEventListener("click", async function () {
             if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.triggerBrowserDownload(
-                    selectedFile.filePath,
-                    selectedFile.fileName
-                );
+                await window.refmansyApi.storage.openDocumentInNewTab(
+                        selectedFile.filePath
+                    );
             } else {
                 alert("No document file is attached to this submission.");
             }

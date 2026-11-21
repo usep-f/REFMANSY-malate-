@@ -80,6 +80,11 @@
                     return;
                 }
 
+                // If user is admin, register active admin presence & heartbeat
+                if (profile.role === "admin") {
+                    this.initAdminPresence(profile);
+                }
+
                 // Populate UI Header Names
                 this.updateHeaderName(profile);
 
@@ -97,6 +102,38 @@
                 console.error("Auth guard error:", err);
                 // Fallback check: if offline or session error, redirect to login
                 window.location.replace("login.html");
+            }
+        },
+
+        initAdminPresence(profile) {
+            try {
+                if (window.refmansyApi?.auth?.setActiveAdminSession) {
+                    window.refmansyApi.auth.setActiveAdminSession(profile.id, profile.full_name || profile.username);
+                }
+
+                // Heartbeat every 15 seconds to keep session alive
+                setInterval(() => {
+                    window.refmansyApi?.auth?.touchActiveAdminSession?.();
+                }, 15000);
+
+                // Listen for presence checks across tabs
+                if (typeof BroadcastChannel !== "undefined") {
+                    const bc = new BroadcastChannel("refmansy_admin_session");
+                    bc.onmessage = (event) => {
+                        if (event.data?.type === "CHECK_ADMIN_ONLINE") {
+                            bc.postMessage({
+                                type: "ADMIN_ONLINE_ACK",
+                                session: {
+                                    id: profile.id,
+                                    name: profile.full_name || profile.username,
+                                    timestamp: Date.now()
+                                }
+                            });
+                        }
+                    };
+                }
+            } catch (e) {
+                console.warn("Admin presence init notice:", e);
             }
         },
 

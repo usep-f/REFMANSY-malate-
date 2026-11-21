@@ -3,14 +3,21 @@
 // ================================================================
 
 const loginForm = document.getElementById("loginForm");
-const usernameInput = document.getElementById("username");
+const emailInput = document.getElementById("email") || document.getElementById("username");
 const passwordInput = document.getElementById("password");
-const roleInput = document.getElementById("role");
 const showPassword = document.getElementById("showPassword");
 const message = document.getElementById("message");
 const forgotPasswordLink = document.getElementById("forgotPasswordLink");
 const unconfirmedAlert = document.getElementById("unconfirmedAlert");
 const verifyNowBtn = document.getElementById("verifyNowBtn");
+
+// Helper to get selected role from radio group or fallback select
+function getSelectedRole() {
+    const checkedRadio = document.querySelector('input[name="role"]:checked');
+    if (checkedRadio) return checkedRadio.value;
+    const selectEl = document.getElementById("role");
+    return selectEl ? selectEl.value : "";
+}
 
 // Modal Elements
 const recoveryModal = document.getElementById("recoveryModal");
@@ -89,67 +96,195 @@ showPassword.addEventListener("change", function () {
     passwordInput.type = this.checked ? "text" : "password";
 });
 
+// Update active radio option styles on change and clear error indications
+const roleRadioGroup = document.getElementById("roleRadioGroup");
+const accountTypeError = document.getElementById("accountTypeError");
+
+document.querySelectorAll('input[name="role"]').forEach(radio => {
+    radio.addEventListener("change", function () {
+        document.querySelectorAll(".radio-option").forEach(opt => opt.classList.remove("selected"));
+    if (this.checked && !this.disabled) {
+        this.closest(".radio-option")?.classList.add("selected");
+    }
+    if (roleRadioGroup) roleRadioGroup.classList.remove("has-error");
+    if (accountTypeError) accountTypeError.style.display = "none";
+    if (message && message.textContent.toLowerCase().includes("account type")) {
+        message.style.display = "none";
+    }
+});
+});
+
+// -------------------------------------------------------------
+// Active Admin Session Detection (Only 1 admin allowed logged in)
+// -------------------------------------------------------------
+function checkAdminSessionState() {
+    const adminSession = window.refmansyApi?.auth?.getActiveAdminSession?.();
+    const roleAdminInput = document.getElementById("roleAdmin");
+    const adminOption = document.getElementById("adminRadioOption");
+    const adminBadge = document.getElementById("adminActiveBadge");
+    const roleFacultyInput = document.getElementById("roleFaculty");
+
+    if (adminSession) {
+        // An admin is currently logged in -> Disable Admin option
+        if (roleAdminInput) {
+            roleAdminInput.disabled = true;
+            if (roleAdminInput.checked) {
+                roleAdminInput.checked = false;
+                if (roleFacultyInput) {
+                    roleFacultyInput.checked = true;
+                    document.querySelectorAll(".radio-option").forEach(opt => opt.classList.remove("selected"));
+                    roleFacultyInput.closest(".radio-option")?.classList.add("selected");
+                }
+            }
+        }
+        if (adminOption) {
+            adminOption.classList.add("disabled");
+            adminOption.classList.remove("selected");
+            adminOption.title = "An administrator is currently logged in. Only 1 administrator is permitted at a time.";
+        }
+        if (adminBadge) {
+            adminBadge.style.display = "inline-block";
+        }
+    } else {
+        // No admin logged in -> Enable Admin option
+        if (roleAdminInput) {
+            roleAdminInput.disabled = false;
+        }
+        if (adminOption) {
+            adminOption.classList.remove("disabled");
+            adminOption.title = "";
+        }
+        if (adminBadge) {
+            adminBadge.style.display = "none";
+        }
+    }
+}
+
+// Initial presence check and cross-tab synchronization
+checkAdminSessionState();
+setInterval(checkAdminSessionState, 5000);
+
+window.addEventListener("storage", function (e) {
+    if (e.key === "refmansy_active_admin_session") {
+        checkAdminSessionState();
+    }
+});
+
+if (typeof BroadcastChannel !== "undefined") {
+    try {
+        const adminBc = new BroadcastChannel("refmansy_admin_session");
+        adminBc.onmessage = function (event) {
+            if (event.data?.type === "ADMIN_LOGGED_IN" || event.data?.type === "ADMIN_ONLINE_ACK") {
+                if (event.data.session) {
+                    localStorage.setItem("refmansy_active_admin_session", JSON.stringify(event.data.session));
+                }
+                checkAdminSessionState();
+            } else if (event.data?.type === "ADMIN_LOGGED_OUT") {
+                checkAdminSessionState();
+            }
+        };
+        // Ping active tabs to verify admin presence
+        adminBc.postMessage({ type: "CHECK_ADMIN_ONLINE" });
+    } catch (e) {
+        console.warn("BroadcastChannel notice:", e);
+    }
+}
+
 // -------------------------------------------------------------
 // Standard Login Action with Unconfirmed User Intercept
 // -------------------------------------------------------------
 loginForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
-    const usernameOrEmail = usernameInput.value.trim();
+    const email = emailInput ? emailInput.value.trim() : "";
     const password = passwordInput.value;
-    const selectedRole = roleInput.value;
+    const selectedRole = getSelectedRole();
     const submitBtn = loginForm.querySelector("button[type='submit']");
 
-    if (!usernameOrEmail || !password || !selectedRole) {
-        showMessage("Please complete all fields.", "error");
-        return;
-    }
+        // Reset previous account type validation state
+        if (roleRadioGroup) roleRadioGroup.classList.remove("has-error");
+        if (accountTypeError) accountTypeError.style.display = "none";
 
-    lastAttemptedEmail = usernameOrEmail;
-    unconfirmedAlert.style.display = "none";
-    if (unconfirmedNotice) unconfirmedNotice.style.display = "none";
-
-    try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Logging in...";
-        showMessage("Verifying credentials...", "info");
-
-        const { profile } = await window.refmansyApi.auth.signIn(
-            usernameOrEmail,
-            password,
-            selectedRole
-        );
-
-        showMessage("Login successful! Redirecting...", "success");
-
-        setTimeout(function () {
-            if (profile.role === "admin") {
-                window.location.href = "admin-dashboard.html";
-            } else {
-                window.location.href = "faculty-dashboard.html";
-            }
-        }, 800);
-    } catch (error) {
-        console.error("Login error:", error);
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Login";
-
-        const errString = (error.message || "").toLowerCase();
-
-        // Check if user is unconfirmed
-        if (errString.includes("email not confirmed") || errString.includes("unconfirmed")) {
-            showMessage("", "");
-            unconfirmedAlert.style.display = "flex";
+        // Required fields validations with clear indications
+        if (!email) {
+            emailInput?.focus();
+            showMessage("Please enter your email.", "error");
             return;
         }
 
-        let errorMsg = error.message || "Login failed. Please check your credentials.";
-        if (errorMsg.includes("Invalid login credentials")) {
-            errorMsg = "Incorrect username/email or password.";
+        if (!password) {
+            passwordInput?.focus();
+            showMessage("Please enter your password.", "error");
+            return;
         }
-        showMessage(errorMsg, "error");
-    }
-});
+
+        if (!selectedRole) {
+            if (roleRadioGroup) roleRadioGroup.classList.add("has-error");
+            if (accountTypeError) accountTypeError.style.display = "flex";
+            showMessage("Please select an account type to continue.", "error");
+            return;
+        }
+
+        // Single active admin enforcement
+        if (selectedRole === "admin") {
+            const activeAdmin = window.refmansyApi?.auth?.getActiveAdminSession?.();
+            if (activeAdmin) {
+                showMessage("An administrator is currently logged in. Only 1 administrator can be logged in at a time.", "error");
+                checkAdminSessionState();
+                return;
+            }
+        }
+
+        lastAttemptedEmail = email;
+        unconfirmedAlert.style.display = "none";
+        if (unconfirmedNotice) unconfirmedNotice.style.display = "none";
+
+        try {
+            // When all required info is met, show circling loading spinner
+            submitBtn.disabled = true;
+            submitBtn.classList.add("loading");
+            submitBtn.innerHTML = '<span class="btn-spinner"></span> <span>Logging in...</span>';
+            showMessage("Verifying credentials...", "info");
+
+            const { profile } = await window.refmansyApi.auth.signIn(
+                email,
+                password,
+                selectedRole
+            );
+
+            submitBtn.innerHTML = '<span class="btn-spinner"></span> <span>Redirecting...</span>';
+            showMessage("Login successful! Redirecting...", "success");
+
+            setTimeout(function () {
+                if (profile.role === "admin") {
+                    window.refmansyApi?.auth?.setActiveAdminSession?.(profile.id, profile.full_name || profile.username);
+                    window.location.href = "admin-dashboard.html";
+                } else {
+                    window.location.href = "faculty-dashboard.html";
+                }
+            }, 800);
+        } catch (error) {
+            console.error("Login error:", error);
+            submitBtn.disabled = false;
+            submitBtn.classList.remove("loading");
+            submitBtn.innerHTML = "Login";
+
+            const errString = (error.message || "").toLowerCase();
+
+            // Check if user is unconfirmed
+            if (errString.includes("email not confirmed") || errString.includes("unconfirmed")) {
+                showMessage("", "");
+                unconfirmedAlert.style.display = "flex";
+                return;
+            }
+
+            let errorMsg = error.message || "Login failed. Please check your credentials.";
+            if (errorMsg.includes("Invalid login credentials")) {
+                errorMsg = "Incorrect email or password.";
+            }
+            showMessage(errorMsg, "error");
+        }
+    });
 
 // Unconfirmed banner "Resend Confirmation Link" action
 verifyNowBtn.addEventListener("click", async function () {
@@ -238,8 +373,8 @@ function openRecoveryModal(initialEmail = "") {
     recoveryStep1.style.display = "block";
     if (initialEmail) {
         recoveryEmailInput.value = initialEmail;
-    } else if (usernameInput.value.includes("@")) {
-        recoveryEmailInput.value = usernameInput.value.trim();
+    } else if (emailInput && emailInput.value.includes("@")) {
+        recoveryEmailInput.value = emailInput.value.trim();
     }
     setTimeout(() => recoveryEmailInput.focus(), 100);
 

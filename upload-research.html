@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Upload Research | Refmansy Faculty</title>
 
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-    >
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
     <link rel="stylesheet" href="upload-research.css">
 </head>
@@ -25,7 +23,8 @@
 
                 <div class="profile-logos">
                     <img src="LOGO LCNHS.png" alt="LCNHS Logo" class="profile-logo-img" width="52" height="52">
-                    <img src="RESPROGRAM.png" alt="Research Program Logo" class="profile-logo-img" width="52" height="52">
+                    <img src="RESPROGRAM.png" alt="Research Program Logo" class="profile-logo-img" width="52"
+                        height="52">
                 </div>
 
                 <div class="profile-information">
@@ -128,7 +127,8 @@
 
                     <ul>
                         <li>Upload research documents in PDF format only (maximum 10 MB).</li>
-                        <li><strong>Anti-Duplication Policy:</strong> Submissions with duplicate or highly similar titles are automatically detected and blocked.</li>
+                        <li><strong>Anti-Duplication Policy:</strong> Submissions with duplicate or highly similar
+                            titles are automatically detected and blocked.</li>
                         <li>Complete all required research metadata including author, category, and abstract.</li>
                         <li>New and edited submissions will be reviewed by administrators before public listing.</li>
                     </ul>
@@ -162,14 +162,8 @@
                                 </span>
                             </div>
 
-                            <input
-                                type="text"
-                                id="researchTitle"
-                                placeholder="Enter the complete research title"
-                                maxlength="200"
-                                autocomplete="off"
-                                required
-                            >
+                            <input type="text" id="researchTitle" placeholder="Enter the complete research title"
+                                maxlength="200" autocomplete="off" required>
 
                             <!-- Real-time Duplicate & Similarity Warning Container -->
                             <div id="duplicateWarningCard" class="duplicate-warning-card" style="display: none;">
@@ -179,7 +173,8 @@
                                     </div>
                                     <div class="duplicate-header-text">
                                         <h4 id="duplicateWarningTitle">Potential Duplicate Research Detected</h4>
-                                        <p id="duplicateWarningSubtitle">A document with a similar title already exists in the repository. Please review below.</p>
+                                        <p id="duplicateWarningSubtitle">A document with a similar title already exists
+                                            in the repository. Please review below.</p>
                                     </div>
                                 </div>
                                 <div id="duplicateMatchesList" class="duplicate-matches-list">
@@ -196,12 +191,7 @@
                                 Researcher / Author *
                             </label>
 
-                            <input
-                                type="text"
-                                id="researcher"
-                                placeholder="Enter researcher name"
-                                required
-                            >
+                            <input type="text" id="researcher" placeholder="Enter researcher name" required>
                         </div>
 
                         <div class="input-group">
@@ -209,11 +199,7 @@
                                 Co-Researchers
                             </label>
 
-                            <input
-                                type="text"
-                                id="coResearchers"
-                                placeholder="Separate names with commas"
-                            >
+                            <input type="text" id="coResearchers" placeholder="Separate names with commas">
                         </div>
 
                         <div class="input-group">
@@ -233,14 +219,8 @@
                                 Year *
                             </label>
 
-                            <input
-                                type="number"
-                                id="publicationYear"
-                                placeholder="Example: 2026"
-                                min="1900"
-                                max="2100"
-                                required
-                            >
+                            <input type="number" id="publicationYear" placeholder="Example: 2026" min="1900" max="2100"
+                                required>
                         </div>
 
                         <div class="input-group">
@@ -248,12 +228,7 @@
                                 Department *
                             </label>
 
-                            <input
-                                type="text"
-                                id="department"
-                                placeholder="Enter department"
-                                required
-                            >
+                            <input type="text" id="department" placeholder="Enter department" required>
                         </div>
 
                         <div class="input-group">
@@ -293,12 +268,8 @@
                                 Abstract / Description *
                             </label>
 
-                            <textarea
-                                id="description"
-                                placeholder="Enter the research abstract or description"
-                                maxlength="1500"
-                                required
-                            ></textarea>
+                            <textarea id="description" placeholder="Enter the research abstract or description"
+                                maxlength="1500" required></textarea>
 
                             <small>
                                 Maximum of 1,500 characters
@@ -310,11 +281,7 @@
                                 Keywords / Tags
                             </label>
 
-                            <input
-                                type="text"
-                                id="keywords"
-                                placeholder="Example: education, technology, learning"
-                            >
+                            <input type="text" id="keywords" placeholder="Example: education, technology, learning">
                         </div>
 
                         <!-- File Upload -->
@@ -324,21 +291,11 @@
                                 Research Document *
                             </label>
 
-                            <div
-                                class="file-upload-area"
-                                id="fileUploadArea"
-                            >
+                            <div class="file-upload-area" id="fileUploadArea">
 
-                                <input
-                                    type="file"
-                                    id="researchFile"
-                                    accept=".pdf,application/pdf"
-                                >
+                                <input type="file" id="researchFile" accept=".pdf,application/pdf">
 
-                                <div
-                                    id="uploadPlaceholder"
-                                    class="upload-placeholder"
-                                >
+                                <div id="uploadPlaceholder" class="upload-placeholder">
                                     <i class="fa-solid fa-cloud-arrow-up"></i>
 
                                     <h4>
@@ -346,21 +303,15 @@
                                     </h4>
 
                                     <p>
-                                        PDF format only, maximum of 10 MB
+                                        PDF format only, maximum of 25 MB
                                     </p>
 
-                                    <button
-                                        type="button"
-                                        id="chooseFileButton"
-                                    >
+                                    <button type="button" id="chooseFileButton">
                                         Choose File
                                     </button>
                                 </div>
 
-                                <div
-                                    id="selectedFile"
-                                    class="selected-file"
-                                >
+                                <div id="selectedFile" class="selected-file">
                                     <div class="file-icon">
                                         <i class="fa-solid fa-file-pdf"></i>
                                     </div>
@@ -374,16 +325,13 @@
                                             0 KB
                                         </span>
 
-                                        <span id="fileCheckBadge" class="title-check-badge" style="display: none; margin-top: 5px;">
+                                        <span id="fileCheckBadge" class="title-check-badge"
+                                            style="display: none; margin-top: 5px;">
                                             <i class="fa-solid fa-spinner fa-spin"></i> Verifying file uniqueness...
                                         </span>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        id="removeFileButton"
-                                        title="Remove file"
-                                    >
+                                    <button type="button" id="removeFileButton" title="Remove file">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
@@ -391,15 +339,18 @@
                             </div>
 
                             <!-- Real-Time Binary SHA-256 Duplicate File Warning Card -->
-                            <div id="fileDuplicateWarningCard" class="duplicate-warning-card blocked" style="display: none; margin-top: 12px;">
+                            <div id="fileDuplicateWarningCard" class="duplicate-warning-card blocked"
+                                style="display: none; margin-top: 12px;">
                                 <div class="duplicate-warning-header">
                                     <div class="duplicate-warning-icon">
                                         <i class="fa-solid fa-file-circle-xmark"></i>
                                     </div>
                                     <div>
-                                        <h4 id="fileDuplicateWarningTitle">Upload Blocked: Identical PDF Document Found</h4>
+                                        <h4 id="fileDuplicateWarningTitle">Upload Blocked: Identical PDF Document Found
+                                        </h4>
                                         <p id="fileDuplicateWarningSubtitle">
-                                            This exact PDF file was already uploaded to the repository under another title. Duplicate document uploads are strictly prohibited.
+                                            This exact PDF file was already uploaded to the repository under another
+                                            title. Duplicate document uploads are strictly prohibited.
                                         </p>
                                     </div>
                                 </div>
@@ -407,7 +358,8 @@
                                 <div class="duplicate-matches-list" id="fileDuplicateMatchesList"></div>
 
                                 <div class="duplicate-footer" id="fileDuplicateActionHint">
-                                    <i class="fa-solid fa-ban"></i> Action Required: This exact PDF is already registered in the system. Please upload a distinct document.
+                                    <i class="fa-solid fa-ban"></i> Action Required: This exact PDF is already
+                                    registered in the system. Please upload a distinct document.
                                 </div>
                             </div>
 
@@ -422,19 +374,11 @@
 
                     <div class="form-actions">
 
-                        <a
-                            href="my-research-files.html"
-                            class="cancel-button"
-                            id="cancelUploadBtn"
-                        >
+                        <a href="my-research-files.html" class="cancel-button" id="cancelUploadBtn">
                             Cancel
                         </a>
 
-                        <button
-                            type="submit"
-                            id="submitButton"
-                            class="submit-button"
-                        >
+                        <button type="submit" id="submitButton" class="submit-button">
                             <i class="fa-solid fa-upload"></i>
                             Submit Research
                         </button>
@@ -455,4 +399,5 @@
     <script src="upload-research.js"></script>
 
 </body>
+
 </html>

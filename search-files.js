@@ -217,113 +217,108 @@ function renderResults(files) {
                 <button type="button" class="btn-card view-details-btn">
                     <i class="fa-regular fa-eye"></i> View Details
                 </button>
-                <button type="button" class="btn-card download-paper-btn">
-                    <i class="fa-solid fa-download"></i> Download
+                <button type="button" class="btn-card download-paper-btn view-paper-btn">
+                    <i class="fa-regular fa-file-pdf"></i> View
                 </button>
             </div>
         `;
 
         card.querySelector(".view-details-btn").addEventListener("click", () => openModal(file));
-        card.querySelector(".download-paper-btn").addEventListener("click", () => triggerDownload(file));
+        card.querySelector(".download-paper-btn").addEventListener("click", () => triggerView(file));
 
         researchResults.appendChild(card);
     });
 }
 
-async function triggerDownload(file) {
-    if (!file || !file.filePath) {
-        alert("This paper does not have a downloadable file attached.");
-        return;
-    }
+    async function triggerView(file) {
+        if (!file || !file.filePath) {
+            alert("This paper does not have a research file attached.");
+            return;
+        }
 
-    try {
-        await window.refmansyApi.downloads.logDownload(file.id, file.title, file.category);
-        await window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
-    } catch (err) {
-        console.error("Download error:", err);
-    }
-}
-
-function setupModal() {
-    const closeBtn = document.getElementById("closeModalButton");
-    if (closeBtn) closeBtn.addEventListener("click", closeModal);
-
-    if (detailsModal) {
-        detailsModal.addEventListener("click", function (e) {
-            if (e.target === detailsModal) closeModal();
-        });
-    }
-
-    const viewDocBtn = document.getElementById("viewDocumentButton");
-    if (viewDocBtn) {
-        viewDocBtn.addEventListener("click", async function () {
-            if (selectedFile && selectedFile.filePath) {
-                const url = await window.refmansyApi.storage.getDownloadUrl(selectedFile.filePath);
-                if (url) window.open(url, "_blank");
-            } else {
-                alert("No document file is attached.");
-            }
-        });
-    }
-
-    const dlBtn = document.getElementById("downloadButton");
-    if (dlBtn) {
-        dlBtn.addEventListener("click", function () {
-            if (selectedFile) triggerDownload(selectedFile);
-        });
-    }
-}
-
-function openModal(file) {
-    selectedFile = file;
-
-    const mTitle = document.getElementById("modalTitle");
-    if (mTitle) mTitle.textContent = file.title;
-    const mRes = document.getElementById("modalResearcher");
-    if (mRes) mRes.textContent = file.researcher;
-    const mCoRes = document.getElementById("modalCoResearchers");
-    if (mCoRes) mCoRes.textContent = file.coResearchers || "None";
-    const mCat = document.getElementById("modalCategory");
-    if (mCat) mCat.textContent = file.category;
-    const mType = document.getElementById("modalResearchType");
-    if (mType) mType.textContent = file.researchType || "N/A";
-    const mDept = document.getElementById("modalDepartment");
-    if (mDept) mDept.textContent = file.department || "N/A";
-    const mYear = document.getElementById("modalYear");
-    if (mYear) mYear.textContent = file.publicationYear || "N/A";
-    const mDesc = document.getElementById("modalDescription");
-    if (mDesc) mDesc.textContent = file.description || "No description provided.";
-
-    const keywordsContainer = document.getElementById("modalKeywords");
-    if (keywordsContainer) {
-        const keywordsArray = (file.keywords || "")
-            .split(",")
-            .map(k => k.trim())
-            .filter(Boolean);
-
-        if (keywordsArray.length > 0) {
-            keywordsContainer.innerHTML = keywordsArray
-                .map(k => `<span class="badge-tag">${escapeHtml(k)}</span>`)
-                .join(" ");
-        } else {
-            keywordsContainer.innerHTML = `<span>No keywords</span>`;
+        try {
+            await window.refmansyApi.downloads.logDownload(file.id, file.title, file.category);
+            await window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
+        } catch (err) {
+            console.error("View error:", err);
         }
     }
 
-    if (detailsModal) detailsModal.classList.add("active");
-}
+    function setupModal() {
+        const closeBtn = document.getElementById("closeModalButton");
+        if (closeBtn) closeBtn.addEventListener("click", closeModal);
 
-function closeModal() {
-    if (detailsModal) detailsModal.classList.remove("active");
-    selectedFile = null;
-}
+        if (detailsModal) {
+            detailsModal.addEventListener("click", function (e) {
+                if (e.target === detailsModal) closeModal();
+            });
+        }
 
-function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+        const viewDocBtn = document.getElementById("viewDocumentButton");
+        if (viewDocBtn) {
+            viewDocBtn.addEventListener("click", async function () {
+                if (selectedFile) triggerView(selectedFile);
+            });
+        }
+
+        const dlBtn = document.getElementById("downloadButton");
+        if (dlBtn) {
+            dlBtn.addEventListener("click", function () {
+                if (selectedFile) triggerView(selectedFile);
+            });
+        }
+    }
+
+    function openModal(file) {
+        selectedFile = file;
+
+        const mTitle = document.getElementById("modalTitle");
+        if (mTitle) mTitle.textContent = file.title;
+        const mRes = document.getElementById("modalResearcher");
+        if (mRes) mRes.textContent = file.researcher;
+        const mCoRes = document.getElementById("modalCoResearchers");
+        if (mCoRes) mCoRes.textContent = file.coResearchers || "None";
+        const mCat = document.getElementById("modalCategory");
+        if (mCat) mCat.textContent = file.category;
+        const mType = document.getElementById("modalResearchType");
+        if (mType) mType.textContent = file.researchType || "N/A";
+        const mDept = document.getElementById("modalDepartment");
+        if (mDept) mDept.textContent = file.department || "N/A";
+        const mYear = document.getElementById("modalYear");
+        if (mYear) mYear.textContent = file.publicationYear || "N/A";
+        const mDesc = document.getElementById("modalDescription");
+        if (mDesc) mDesc.textContent = file.description || "No description provided.";
+
+        const keywordsContainer = document.getElementById("modalKeywords");
+        if (keywordsContainer) {
+            const keywordsArray = (file.keywords || "")
+                .split(",")
+                .map(k => k.trim())
+                .filter(Boolean);
+
+            if (keywordsArray.length > 0) {
+                keywordsContainer.innerHTML = keywordsArray
+                    .map(k => `<span class="badge-tag">${escapeHtml(k)}</span>`)
+                    .join(" ");
+            } else {
+                keywordsContainer.innerHTML = `<span>No keywords</span>`;
+            }
+        }
+
+        if (detailsModal) detailsModal.classList.add("active");
+    }
+
+    function closeModal() {
+        if (detailsModal) detailsModal.classList.remove("active");
+        selectedFile = null;
+    }
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }

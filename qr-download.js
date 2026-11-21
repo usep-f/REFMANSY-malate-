@@ -85,10 +85,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        // Configure manual download fallback button
+        // Configure manual view button
         if (manualDownloadBtn) {
             manualDownloadBtn.href = downloadUrl;
-            manualDownloadBtn.download = file.file_name || `${slugify(file.title || "document")}.pdf`;
+            manualDownloadBtn.target = "_blank";
+            manualDownloadBtn.removeAttribute("download");
             manualDownloadBtn.addEventListener("click", () => {
                 logQrDownload(client, file);
             });
@@ -97,18 +98,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Show success view
         showSuccess();
 
-        // Log download event in download_records
+        // Log access event in download_records
         await logQrDownload(client, file);
 
-        // Automatically trigger download
+        // Automatically open document in new tab
         setTimeout(() => {
-            triggerDirectDownload(downloadUrl, file.file_name || `${slugify(file.title || "document")}.pdf`);
-        }, 300);
+        window.open(downloadUrl, "_blank");
+    }, 500);
 
     } catch (err) {
-        console.error("QR Download Error:", err);
-        showError(err.message || "An unexpected error occurred while processing the QR code.");
-    }
+    console.error("QR Download Error:", err);
+    showError(err.message || "An unexpected error occurred while processing the QR code.");
+}
 });
 
 async function logQrDownload(client, file) {

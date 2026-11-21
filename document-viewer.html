@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REFMANSY - Research Document Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="document-viewer.css">
+</head>
+<body>
+    <header class="viewer-header">
+        <div class="header-left">
+            <button type="button" id="backButton" class="btn-icon" title="Go Back">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div class="viewer-brand">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>REFMANSY</span>
+            </div>
+            <div class="divider"></div>
+            <div class="header-info">
+                <h1 id="documentTitle" class="doc-title">Loading research document...</h1>
+                <div class="doc-meta">
+                    <span id="documentId" class="badge-id" style="display: none;">RF-0000</span>
+                    <span id="documentAuthor">Please wait...</span>
+                    <span id="documentCategory" class="badge-category" style="display: none;">General</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button type="button" id="printButton" class="btn-viewer" title="Print document">
+                <i class="fa-solid fa-print"></i>
+                <span>Print</span>
+            </button>
+            <button type="button" id="downloadButton" class="btn-viewer btn-download" title="Download PDF document" disabled>
+                <i class="fa-solid fa-download"></i>
+                <span id="downloadBtnText">Download PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="viewer-main">
+        <div id="loadingOverlay" class="viewer-state">
+            <div class="state-box">
+                <i class="fa-solid fa-spinner fa-spin state-icon"></i>
+                <h3>Loading Research Document</h3>
+                <p>Preparing document preview. Please wait a moment...</p>
+            </div>
+        </div>
+
+        <div id="errorOverlay" class="viewer-state error" style="display: none;">
+            <div class="state-box">
+                <i class="fa-solid fa-triangle-exclamation state-icon error-icon"></i>
+                <h3 id="errorHeading">Unable to Load Document</h3>
+                <p id="errorMessage">The requested research document could not be retrieved.</p>
+                <button type="button" id="retryButton" class="btn-retry">
+                    <i class="fa-solid fa-rotate-right"></i> Try Again
+                </button>
+            </div>
+        </div>
+
+        <iframe id="pdfViewerFrame" class="pdf-frame" title="PDF Viewer" allow="fullscreen"></iframe>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-client.js"></script>
+    <script src="document-viewer.js"></script>
+</body>
+</html>

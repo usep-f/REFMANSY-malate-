@@ -129,8 +129,8 @@ function renderTable(files) {
                     </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="Download Document" style="background-color: var(--approved-green); margin-left: 5px;">
-                                <i class="fa-solid fa-download"></i>
+                            ? `<button type="button" class="view-button download-btn" title="View Document" style="background-color: var(--approved-green); margin-left: 5px;">
+                                <i class="fa-regular fa-file-pdf"></i> View
                                </button>`
                             : ""
                     }
@@ -148,7 +148,7 @@ function renderTable(files) {
         const dlBtn = row.querySelector(".download-btn");
         if (dlBtn) {
             dlBtn.addEventListener("click", () => {
-                window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
+                window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
             });
         }
 
@@ -176,7 +176,7 @@ function setupModal() {
     if (viewBtn) {
         viewBtn.addEventListener("click", async function () {
             if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.triggerBrowserDownload(selectedFile.filePath, selectedFile.fileName);
+                await window.refmansyApi.storage.openDocumentInNewTab(selectedFile.filePath);
             } else {
                 alert("No document file is attached.");
             }

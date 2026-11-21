@@ -162,8 +162,8 @@ function renderTable(files) {
             file.status === "approved"
                 ? `<span class="status-label status-approved"><i class="fa-solid fa-circle-check"></i> Approved</span>`
                 : file.status === "rejected"
-                ? `<span class="status-label status-rejected"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>`
-                : `<span class="status-label status-pending"><i class="fa-solid fa-clock"></i> Pending</span>`;
+                    ? `<span class="status-label status-rejected"><i class="fa-solid fa-circle-xmark"></i> Rejected</span>`
+                    : `<span class="status-label status-pending"><i class="fa-solid fa-clock"></i> Pending</span>`;
 
         row.innerHTML = `
             <td><strong>${displayId}</strong></td>
@@ -184,8 +184,8 @@ function renderTable(files) {
                     </button>
                     ${
                         file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="Download Document" style="background-color: var(--dark-blue); margin-left: 5px;">
-                                <i class="fa-solid fa-download"></i>
+                            ? `<button type="button" class="view-button download-btn" title="View Document" style="background-color: var(--dark-blue); margin-left: 5px;">
+                                <i class="fa-regular fa-file-pdf"></i> View
                                </button>`
                             : ""
                     }
@@ -201,7 +201,7 @@ function renderTable(files) {
         const dlBtn = row.querySelector(".download-btn");
         if (dlBtn) {
             dlBtn.addEventListener("click", () => {
-                window.refmansyApi.storage.triggerBrowserDownload(file.filePath, file.fileName);
+                window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
             });
         }
 
@@ -237,10 +237,9 @@ function setupModal() {
     if (viewDocBtn) {
         viewDocBtn.addEventListener("click", async function () {
             if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.triggerBrowserDownload(
-                    selectedFile.filePath,
-                    selectedFile.fileName
-                );
+                await window.refmansyApi.storage.openDocumentInNewTab(
+                        selectedFile.filePath
+                    );
             } else {
                 alert("No document file is attached to this submission.");
             }

@@ -39,7 +39,7 @@ let editingFileId = null;
 let isTitleBlocked = false;
 let checkTitleDebounceTimer = null;
 
-const maximumFileSize = 10 * 1024 * 1024; // 10 MB limit for Supabase Storage
+const maximumFileSize = 25 * 1024 * 1024; // 25 MB limit for Supabase Storage
 
 // Protect Page with Supabase Auth Guard
 window.refmansyAuthGuard.init("faculty", function (profile, user) {
@@ -228,8 +228,8 @@ function renderDuplicateCheckResults(matches, inputTitle) {
         const statusBadge = m.status === "approved"
             ? `<span style="color: #16a34a; font-weight: 600;">Approved</span>`
             : m.status === "pending"
-            ? `<span style="color: #d97706; font-weight: 600;">Pending Review</span>`
-            : `<span style="color: #dc2626; font-weight: 600;">Rejected</span>`;
+                ? `<span style="color: #d97706; font-weight: 600;">Pending Review</span>`
+                : `<span style="color: #dc2626; font-weight: 600;">Rejected</span>`;
 
         item.innerHTML = `
             <div class="match-info">
@@ -309,7 +309,7 @@ function handleSelectedFile(file) {
     }
 
     if (file.size > maximumFileSize) {
-        showFormMessage("The selected file exceeds the 10 MB size limit.", "error");
+        showFormMessage("The selected file exceeds the 25 MB size limit.", "error");
         removeSelectedFile();
         return;
     }
@@ -397,8 +397,8 @@ function renderFileDuplicateCheckResults(matches) {
         const statusBadge = m.status === "approved"
             ? `<span style="color: #16a34a; font-weight: 600;">Approved</span>`
             : m.status === "pending"
-            ? `<span style="color: #d97706; font-weight: 600;">Pending Review</span>`
-            : `<span style="color: #dc2626; font-weight: 600;">Rejected</span>`;
+                ? `<span style="color: #d97706; font-weight: 600;">Pending Review</span>`
+                : `<span style="color: #dc2626; font-weight: 600;">Rejected</span>`;
 
         item.innerHTML = `
             <div class="match-info">

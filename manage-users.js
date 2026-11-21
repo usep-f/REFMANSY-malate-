@@ -196,17 +196,15 @@ function setupModal() {
 
     const cancelBtn = document.getElementById("cancelButton");
     if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
-
-    if (userModal) {
-        userModal.addEventListener("click", function (e) {
-            if (e.target === userModal) closeModal();
-        });
-    }
 }
 
 function openAddModal() {
     editingUserId = null;
     if (modalTitle) modalTitle.textContent = "Add New User";
+    const headerIcon = document.getElementById("modalHeaderIcon");
+    if (headerIcon) headerIcon.className = "fa-solid fa-user-plus";
+    const sub = document.getElementById("modalSubtitle");
+    if (sub) sub.textContent = "Enter user details and authentication credentials.";
     if (userForm) userForm.reset();
 
     const pwInput = document.getElementById("password");
@@ -214,6 +212,7 @@ function openAddModal() {
     const confirmPwInput = document.getElementById("confirmPassword");
     if (confirmPwInput) confirmPwInput.required = true;
 
+    clearAllValidations();
     clearFormMessage();
     if (userModal) userModal.classList.add("active");
 }
@@ -221,6 +220,10 @@ function openAddModal() {
 function openEditModal(user) {
     editingUserId = user.id;
     if (modalTitle) modalTitle.textContent = "Edit User Account";
+    const headerIcon = document.getElementById("modalHeaderIcon");
+    if (headerIcon) headerIcon.className = "fa-solid fa-user-pen";
+    const sub = document.getElementById("modalSubtitle");
+    if (sub) sub.textContent = "Update user details and access permissions.";
 
     const fn = document.getElementById("fullname");
     if (fn) fn.value = user.fullname || "";
@@ -234,10 +237,17 @@ function openEditModal(user) {
     if (st) st.value = user.status || "active";
 
     const pwInput = document.getElementById("password");
-    if (pwInput) pwInput.required = false;
+    if (pwInput) {
+        pwInput.value = "";
+        pwInput.required = false;
+    }
     const confirmPwInput = document.getElementById("confirmPassword");
-    if (confirmPwInput) confirmPwInput.required = false;
+    if (confirmPwInput) {
+        confirmPwInput.value = "";
+        confirmPwInput.required = false;
+    }
 
+    clearAllValidations();
     clearFormMessage();
     if (userModal) userModal.classList.add("active");
 }
@@ -245,13 +255,328 @@ function openEditModal(user) {
 function closeModal() {
     if (userModal) userModal.classList.remove("active");
     editingUserId = null;
+    clearAllValidations();
+}
+
+// ----------------------------------------------------------------
+// Form Validation & Feedback Helpers
+// ----------------------------------------------------------------
+function setFieldFeedback(inputEl, feedbackEl, message, isError = true) {
+    if (!feedbackEl) return;
+    if (!message) {
+        feedbackEl.style.display = "none";
+        feedbackEl.textContent = "";
+        feedbackEl.className = "field-feedback";
+        if (inputEl) {
+            inputEl.classList.remove("input-error", "input-success");
+        }
+    } else {
+        feedbackEl.style.display = "flex";
+        feedbackEl.innerHTML = (isError ? '<i class="fa-solid fa-circle-exclamation"></i> ' : '<i class="fa-solid fa-circle-check"></i> ') + escapeHtml(message);
+        feedbackEl.className = "field-feedback " + (isError ? "error" : "success");
+        if (inputEl) {
+            inputEl.classList.remove(isError ? "input-success" : "input-error");
+            inputEl.classList.add(isError ? "input-error" : "input-success");
+        }
+    }
+}
+
+function clearAllValidations() {
+    const inputs = [
+        document.getElementById("fullname"),
+        document.getElementById("username"),
+        document.getElementById("email"),
+        document.getElementById("password"),
+        document.getElementById("confirmPassword")
+    ];
+    inputs.forEach(inp => {
+        if (inp) inp.classList.remove("input-error", "input-success");
+    });
+
+    const feedbacks = [
+        document.getElementById("fullnameError"),
+        document.getElementById("usernameError"),
+        document.getElementById("emailError"),
+        document.getElementById("passwordFeedback"),
+        document.getElementById("confirmPasswordFeedback")
+    ];
+    feedbacks.forEach(fb => {
+        if (fb) {
+            fb.style.display = "none";
+            fb.textContent = "";
+            fb.className = "field-feedback";
+        }
+    });
+
+    const pwStrengthBox = document.getElementById("passwordStrengthBox");
+    if (pwStrengthBox) pwStrengthBox.style.display = "none";
+}
+
+function validateFullName(showError = false) {
+    const fnInput = document.getElementById("fullname");
+    const fnError = document.getElementById("fullnameError");
+    const val = (fnInput?.value || "").trim();
+
+    if (!val) {
+        if (showError) {
+            setFieldFeedback(fnInput, fnError, "Full Name is required (Format: Surname, First Name, Middle Name)", true);
+        }
+        return false;
+    }
+
+    setFieldFeedback(fnInput, fnError, "", false);
+    return true;
+}
+
+function validateUsername(showError = false) {
+    const unInput = document.getElementById("username");
+    const unError = document.getElementById("usernameError");
+    const val = (unInput?.value || "").trim();
+
+    if (!val) {
+        if (showError) {
+            setFieldFeedback(unInput, unError, "Username is required (eg Juan_12)", true);
+        }
+        return false;
+    }
+
+    if (val.length < 3) {
+        if (showError) {
+            setFieldFeedback(unInput, unError, "Username must be at least 3 characters (eg Juan_12)", true);
+        }
+        return false;
+    }
+
+    if (val.length > 20) {
+        if (showError) {
+            setFieldFeedback(unInput, unError, "Username cannot exceed 20 characters", true);
+        }
+        return false;
+    }
+
+    const pattern = /^[a-zA-Z0-9_]+$/;
+    if (!pattern.test(val)) {
+        if (showError) {
+            setFieldFeedback(unInput, unError, "Only letters, numbers, and underscore (_) are allowed (eg Juan_12)", true);
+        }
+        return false;
+    }
+
+    setFieldFeedback(unInput, unError, "", false);
+    return true;
+}
+
+function validateEmail(showError = false) {
+    const emInput = document.getElementById("email");
+    const emError = document.getElementById("emailError");
+    const val = (emInput?.value || "").trim();
+
+    if (!val) {
+        if (showError) {
+            setFieldFeedback(emInput, emError, "Email address is missing or required (e.g. user@lcnhs.edu.ph)", true);
+        }
+        return false;
+    }
+
+    if (!val.includes("@")) {
+        if (showError) {
+            setFieldFeedback(emInput, emError, "Missing '@' in email address (e.g. user@lcnhs.edu.ph)", true);
+        }
+        return false;
+    }
+
+    const parts = val.split("@");
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        if (showError) {
+            setFieldFeedback(emInput, emError, "Incomplete email address (e.g. user@lcnhs.edu.ph)", true);
+        }
+        return false;
+    }
+
+    const domain = parts[1];
+    if (!domain.includes(".")) {
+        if (showError) {
+            setFieldFeedback(emInput, emError, "Missing domain extension (e.g. .edu.ph, .edu, .com)", true);
+        }
+        return false;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(val)) {
+        if (showError) {
+            setFieldFeedback(emInput, emError, "Incorrect email format. Sample: user@lcnhs.edu.ph", true);
+        }
+        return false;
+    }
+
+    setFieldFeedback(emInput, emError, "", false);
+    return true;
+}
+
+function checkPasswordStrength(showError = false) {
+    const pwInput = document.getElementById("password");
+    const pwFeedback = document.getElementById("passwordFeedback");
+    const pwBox = document.getElementById("passwordStrengthBox");
+    const bar = document.getElementById("strengthBar");
+    const txt = document.getElementById("strengthText");
+    const req = document.getElementById("strengthRequirement");
+    const val = pwInput?.value || "";
+
+    if (editingUserId && !val) {
+        if (pwBox) pwBox.style.display = "none";
+        setFieldFeedback(pwInput, pwFeedback, "", false);
+        return true;
+    }
+
+    if (!val) {
+        if (pwBox) pwBox.style.display = "none";
+        if (showError) {
+            setFieldFeedback(pwInput, pwFeedback, "Password is required (min. 6 characters with number)", true);
+        } else {
+            setFieldFeedback(pwInput, pwFeedback, "", false);
+        }
+        return false;
+    }
+
+    if (pwBox) pwBox.style.display = "block";
+
+    const hasNumber = /\d/.test(val);
+    const hasLetters = /[a-zA-Z]/.test(val);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(val);
+    const isLongEnough = val.length >= 6;
+    const isStrongLength = val.length >= 8;
+
+    let strength = "weak";
+    let reqText = "Must include at least 1 number";
+
+    if (!isLongEnough) {
+        strength = "weak";
+        reqText = "Too short (min 6 chars with number)";
+    } else if (!hasNumber) {
+        strength = "weak";
+        reqText = "Must include at least 1 number";
+    } else if (!hasLetters) {
+        strength = "weak";
+        reqText = "Include both letters and numbers";
+    } else if (isStrongLength && (hasSpecial || (/[A-Z]/.test(val) && /[a-z]/.test(val)))) {
+        strength = "strong";
+        reqText = "Strong password! Includes numbers & characters";
+    } else {
+        strength = "medium";
+        reqText = "Good password (add uppercase or special chars for Strong)";
+    }
+
+    if (bar) bar.className = "strength-bar " + strength;
+    if (txt) {
+        txt.className = "strength-text " + strength;
+        txt.textContent = strength.charAt(0).toUpperCase() + strength.slice(1);
+    }
+    if (req) req.textContent = reqText;
+
+    if (!isLongEnough) {
+        if (showError) setFieldFeedback(pwInput, pwFeedback, "Password must be at least 6 characters.", true);
+        else setFieldFeedback(pwInput, pwFeedback, "", false);
+        return false;
+    }
+
+    if (!hasNumber) {
+        if (showError) setFieldFeedback(pwInput, pwFeedback, "Password must include at least 1 number.", true);
+        else setFieldFeedback(pwInput, pwFeedback, "", false);
+        return false;
+    }
+
+    setFieldFeedback(pwInput, pwFeedback, "", false);
+    return true;
+}
+
+function checkPasswordMatch(showError = false) {
+    const pwInput = document.getElementById("password");
+    const cpwInput = document.getElementById("confirmPassword");
+    const cpwFeedback = document.getElementById("confirmPasswordFeedback");
+
+    const pw = pwInput?.value || "";
+    const cpw = cpwInput?.value || "";
+
+    if (editingUserId && !pw && !cpw) {
+        setFieldFeedback(cpwInput, cpwFeedback, "", false);
+        return true;
+    }
+
+    if (!cpw) {
+        if (showError) {
+            setFieldFeedback(cpwInput, cpwFeedback, "Please confirm your password", true);
+            return false;
+        }
+        setFieldFeedback(cpwInput, cpwFeedback, "", false);
+        return false;
+    }
+
+    if (pw !== cpw) {
+        setFieldFeedback(cpwInput, cpwFeedback, "Passwords do not match", true);
+        return false;
+    }
+
+    setFieldFeedback(cpwInput, cpwFeedback, "Passwords match", false);
+    return true;
 }
 
 function setupForm() {
     if (!userForm) return;
 
+    const fnInput = document.getElementById("fullname");
+    const unInput = document.getElementById("username");
+    const emInput = document.getElementById("email");
+    const pwInput = document.getElementById("password");
+    const cpwInput = document.getElementById("confirmPassword");
+
+    if (fnInput) {
+        fnInput.addEventListener("input", () => validateFullName(false));
+        fnInput.addEventListener("blur", () => validateFullName(true));
+    }
+
+    if (unInput) {
+        unInput.addEventListener("input", () => {
+            if (unInput.value.length >= 3) validateUsername(true);
+            else validateUsername(false);
+        });
+        unInput.addEventListener("blur", () => validateUsername(true));
+    }
+
+    if (emInput) {
+        emInput.addEventListener("input", () => {
+            if (emInput.value.includes("@")) validateEmail(false);
+        });
+        emInput.addEventListener("blur", () => validateEmail(true));
+    }
+
+    if (pwInput) {
+        pwInput.addEventListener("input", () => {
+            checkPasswordStrength(false);
+            if (cpwInput && cpwInput.value) {
+                checkPasswordMatch(false);
+            }
+        });
+        pwInput.addEventListener("blur", () => checkPasswordStrength(true));
+    }
+
+    if (cpwInput) {
+        cpwInput.addEventListener("input", () => checkPasswordMatch(false));
+        cpwInput.addEventListener("blur", () => checkPasswordMatch(true));
+    }
+
     userForm.addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        const fullnameValid = validateFullName(true);
+        const usernameValid = validateUsername(true);
+        const emailValid = validateEmail(true);
+        const passwordValid = checkPasswordStrength(true);
+        const matchValid = checkPasswordMatch(true);
+
+        if (!fullnameValid || !usernameValid || !emailValid || !passwordValid || !matchValid) {
+            showFormMessage("Please correct the errors in the form before saving.", "error");
+            return;
+        }
 
         const fullname = (document.getElementById("fullname")?.value || "").trim();
         const username = (document.getElementById("username")?.value || "").trim();
@@ -260,15 +585,10 @@ function setupForm() {
         const status = document.getElementById("accountStatus")?.value || "active";
         const saveBtn = userForm.querySelector("button[type='submit']");
 
-        if (!fullname || !username || !email || !role) {
-            showFormMessage("Please fill in all required fields.", "error");
-            return;
-        }
-
         try {
             if (saveBtn) {
                 saveBtn.disabled = true;
-                saveBtn.textContent = "Saving...";
+                saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
             }
 
             if (editingUserId) {
@@ -280,25 +600,6 @@ function setupForm() {
                 });
             } else {
                 const password = document.getElementById("password")?.value || "";
-                const confirmPassword = document.getElementById("confirmPassword")?.value || "";
-
-                if (!password || password.length < 6) {
-                    showFormMessage("Password must be at least 6 characters.", "error");
-                    if (saveBtn) {
-                        saveBtn.disabled = false;
-                        saveBtn.textContent = "Save User";
-                    }
-                    return;
-                }
-
-                if (password !== confirmPassword) {
-                    showFormMessage("Passwords do not match. Please verify.", "error");
-                    if (saveBtn) {
-                        saveBtn.disabled = false;
-                        saveBtn.textContent = "Save User";
-                    }
-                    return;
-                }
 
                 await window.refmansyApi.users.createUser(email, password, {
                     fullname,
@@ -316,7 +617,7 @@ function setupForm() {
         } finally {
             if (saveBtn) {
                 saveBtn.disabled = false;
-                saveBtn.textContent = "Save User";
+                saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save User';
             }
         }
     });

@@ -280,59 +280,65 @@
 
             <div class="modal-header">
 
-                <div>
-                    <h3 id="modalTitle">Add User</h3>
-                    <p>Enter the account information below.</p>
+                <div class="modal-header-content">
+                    <div class="modal-icon-badge">
+                        <i class="fa-solid fa-user-plus" id="modalHeaderIcon"></i>
+                    </div>
+                    <div>
+                        <h3 id="modalTitle">Add User</h3>
+                        <p id="modalSubtitle">Enter the account information below.</p>
+                    </div>
                 </div>
 
-                <button type="button" id="closeModalButton">
+                <button type="button" id="closeModalButton" title="Close">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
 
             </div>
 
-            <form id="userForm">
+            <form id="userForm" novalidate>
 
                 <input type="hidden" id="userId">
 
                 <div class="form-grid">
 
                     <div class="input-group full-width">
-                        <label for="fullname">Full Name</label>
-
+                        <label for="fullname"><i class="fa-solid fa-id-card"></i> Full Name</label>
                         <input
                             type="text"
                             id="fullname"
-                            placeholder="Enter full name"
+                            placeholder="e.g. Dela Cruz, Juan Santos"
                             required
                         >
+                        <small class="input-hint">Format: Surname, First Name, Middle Name (e.g. Dela Cruz, Juan Santos)</small>
+                        <small id="fullnameError" class="field-feedback error" style="display: none;"></small>
                     </div>
 
                     <div class="input-group">
-                        <label for="username">Username</label>
-
+                        <label for="username"><i class="fa-solid fa-at"></i> Username</label>
                         <input
                             type="text"
                             id="username"
-                            placeholder="Enter username"
+                            placeholder="eg Juan_12"
+                            maxlength="20"
                             required
                         >
+                        <small id="usernameError" class="field-feedback error" style="display: none;"></small>
                     </div>
 
                     <div class="input-group">
-                        <label for="email">Email Address</label>
-
+                        <label for="email"><i class="fa-solid fa-envelope"></i> Email Address</label>
                         <input
                             type="email"
                             id="email"
-                            placeholder="Enter email address"
+                            placeholder="e.g. user@lcnhs.edu.ph"
                             required
                         >
+                        <small id="emailError" class="field-feedback" style="display: none;"></small>
                     </div>
 
                     <div class="input-group">
-                        <label for="role">Account Role</label>
-
+                        <label for="role"><i class="fa-solid fa-shield-halved"></i> Account Role</label>
                         <select id="role" required>
                             <option value="faculty">Faculty</option>
                             <option value="admin">Admin</option>
@@ -340,10 +346,7 @@
                     </div>
 
                     <div class="input-group">
-                        <label for="accountStatus">
-                            Account Status
-                        </label>
-
+                        <label for="accountStatus"><i class="fa-solid fa-circle-check"></i> Account Status</label>
                         <select id="accountStatus" required>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -351,27 +354,34 @@
                     </div>
 
                     <div class="input-group">
-                        <label for="password">Password</label>
-
+                        <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
                         <input
                             type="password"
                             id="password"
-                            placeholder="Enter password"
+                            placeholder="Min. 6 chars with number"
                             minlength="6"
                         >
+                        <div id="passwordStrengthBox" class="password-strength-box" style="display: none;">
+                            <div class="strength-bar-track">
+                                <div id="strengthBar" class="strength-bar"></div>
+                            </div>
+                            <div class="strength-info">
+                                <span id="strengthText" class="strength-text">Weak</span>
+                                <span id="strengthRequirement" class="strength-req">Must include at least 1 number</span>
+                            </div>
+                        </div>
+                        <small id="passwordFeedback" class="field-feedback" style="display: none;"></small>
                     </div>
 
                     <div class="input-group">
-                        <label for="confirmPassword">
-                            Confirm Password
-                        </label>
-
+                        <label for="confirmPassword"><i class="fa-solid fa-key"></i> Confirm Password</label>
                         <input
                             type="password"
                             id="confirmPassword"
-                            placeholder="Confirm password"
+                            placeholder="Re-enter password"
                             minlength="6"
                         >
+                        <small id="confirmPasswordFeedback" class="field-feedback" style="display: none;"></small>
                     </div>
 
                 </div>
@@ -385,6 +395,7 @@
                         id="cancelButton"
                         class="cancel-button"
                     >
+                        <i class="fa-solid fa-xmark"></i>
                         Cancel
                     </button>
 

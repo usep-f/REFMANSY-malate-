@@ -101,8 +101,8 @@ function renderSubmissions(files) {
             file.status === "approved"
                 ? "Approved"
                 : file.status === "rejected"
-                ? "Rejected"
-                : "Pending Review";
+                    ? "Rejected"
+                    : "Pending Review";
 
         const displayId = "RF-" + String(index + 1).padStart(4, "0");
 
@@ -115,23 +115,21 @@ function renderSubmissions(files) {
             <div class="submission-meta">
                 <p><strong>Category:</strong> ${escapeHtml(file.category)}</p>
                 <p><strong>Submitted:</strong> ${file.dateUploaded || "N/A"}</p>
-                ${
-                    file.reviewComment
-                        ? `<p class="review-preview"><strong>Reviewer Note:</strong> ${escapeHtml(file.reviewComment)}</p>`
-                        : ""
-                }
+                ${file.reviewComment
+                ? `<p class="review-preview"><strong>Reviewer Note:</strong> ${escapeHtml(file.reviewComment)}</p>`
+                : ""
+            }
             </div>
             <div class="submission-card-footer">
                 <button type="button" class="btn-card view-details-btn">
                     <i class="fa-regular fa-eye"></i> View Timeline & Details
                 </button>
-                ${
-                    (file.status === "pending" || file.status === "rejected")
-                        ? `<button type="button" class="btn-card delete-card-btn" title="Delete Submission" style="background-color: #ef4444; color: white; margin-left: 6px; padding: 0.5rem 0.75rem;">
+                ${(file.status === "pending" || file.status === "rejected")
+                ? `<button type="button" class="btn-card delete-card-btn" title="Delete Submission" style="background-color: #ef4444; color: white; margin-left: 6px; padding: 0.5rem 0.75rem;">
                             <i class="fa-solid fa-trash"></i>
                            </button>`
-                        : ""
-                }
+                : ""
+            }
             </div>
         `;
 
@@ -195,10 +193,9 @@ function setupModal() {
     if (viewBtn) {
         viewBtn.addEventListener("click", async function () {
             if (selectedSubmission && selectedSubmission.filePath) {
-                await window.refmansyApi.storage.triggerBrowserDownload(
-                    selectedSubmission.filePath,
-                    selectedSubmission.fileName
-                );
+                await window.refmansyApi.storage.openDocumentInNewTab(
+                        selectedSubmission.filePath
+                    );
             } else {
                 alert("No document file is attached.");
             }
