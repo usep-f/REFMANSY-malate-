@@ -121,28 +121,14 @@ function renderTable(files) {
             <td><span class="status-label"><i class="fa-solid fa-circle-xmark"></i> Rejected</span></td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="view-button view-btn" title="View Details">
-                        <i class="fa-regular fa-eye"></i> View
+                    <button type="button" class="view-button view-btn" title="Details">
+                        <i class="fa-solid fa-circle-info"></i> Details
                     </button>
-                    ${
-                        file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="View Document" style="background-color: var(--dark-blue); margin-left: 5px;">
-                                <i class="fa-regular fa-file-pdf"></i> View
-                               </button>`
-                            : ""
-                    }
                 </div>
             </td>
         `;
 
         row.querySelector(".view-btn").addEventListener("click", () => openModal(file));
-
-        const dlBtn = row.querySelector(".download-btn");
-        if (dlBtn) {
-            dlBtn.addEventListener("click", () => {
-                window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
-            });
-        }
 
         rejectedFilesTable.appendChild(row);
     });
@@ -155,17 +141,6 @@ function setupModal() {
     if (detailsModal) {
         detailsModal.addEventListener("click", function (e) {
             if (e.target === detailsModal) closeModal();
-        });
-    }
-
-    const viewBtn = document.getElementById("viewFileButton");
-    if (viewBtn) {
-        viewBtn.addEventListener("click", async function () {
-            if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.openDocumentInNewTab(selectedFile.filePath);
-            } else {
-                alert("No document file is attached.");
-            }
         });
     }
 

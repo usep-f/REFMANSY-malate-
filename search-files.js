@@ -214,16 +214,12 @@ function renderResults(files) {
                 ${keywordsHtml ? `<div class="paper-tags">${keywordsHtml}</div>` : ""}
             </div>
             <div class="paper-card-footer">
-                <button type="button" class="btn-card view-details-btn">
-                    <i class="fa-regular fa-eye"></i> View Details
-                </button>
                 <button type="button" class="btn-card download-paper-btn view-paper-btn">
                     <i class="fa-regular fa-file-pdf"></i> View
                 </button>
             </div>
         `;
 
-        card.querySelector(".view-details-btn").addEventListener("click", () => openModal(file));
         card.querySelector(".download-paper-btn").addEventListener("click", () => triggerView(file));
 
         researchResults.appendChild(card);

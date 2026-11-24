@@ -501,295 +501,299 @@
         // MODULE B: RESEARCH SUBMISSIONS TABLE
         // -------------------------------------------------------------
         if (config.modules.catalog) {
+            // Start Module B cleanly on a new page to keep Page 1 as an executive overview
+            doc.addPage();
+            currentY = 20;
+
             let targetFiles = allFiles;
             let scopeLabel = `All Submissions (${allFiles.length} Records)`;
 
-            const selectedScope = (config.catalogScope || "approved").toLowerCase();
+            const selectedScope = (config.catalogScope || "all").toLowerCase();
 
-            if (selectedScope === "approved") {
-                targetFiles = allFiles.filter(f => (f.status || "").toLowerCase() === "approved");
-                scopeLabel = `Approved Submissions (${targetFiles.length} Records)`;
-            } else if (selectedScope === "pending") {
-                targetFiles = allFiles.filter(f => (f.status || "").toLowerCase() === "pending");
-                scopeLabel = `Pending Submissions (${targetFiles.length} Records)`;
-            } else if (selectedScope === "filtered") {
-                targetFiles = filteredFiles;
-                scopeLabel = `Filtered Results (${targetFiles.length} Records)`;
-            } else {
-                targetFiles = allFiles;
-                scopeLabel = `All Submissions (${allFiles.length} Records)`;
-            }
+                if (selectedScope === "filtered" || (filteredFiles && filteredFiles.length > 0 && filteredFiles.length !== allFiles.length)) {
+                    targetFiles = filteredFiles;
+                    scopeLabel = `Filtered Submissions (${targetFiles.length} Records)`;
+                } else if (selectedScope === "approved") {
+                    targetFiles = allFiles.filter(f => (f.status || "").toLowerCase() === "approved");
+                    scopeLabel = `Approved Submissions (${targetFiles.length} Records)`;
+                } else if (selectedScope === "pending") {
+                    targetFiles = allFiles.filter(f => (f.status || "").toLowerCase() === "pending");
+                    scopeLabel = `Pending Submissions (${targetFiles.length} Records)`;
+                } else {
+                    targetFiles = allFiles;
+                    scopeLabel = `All Submissions (${allFiles.length} Records)`;
+                }
 
-            drawSectionHeading("Module B: Research Submissions", scopeLabel);
+                drawSectionHeading("Module B: Research Submissions", scopeLabel);
 
-            if (targetFiles.length === 0) {
-                doc.setFont("helvetica", "italic");
-                doc.setFontSize(9);
-                doc.setTextColor(148, 163, 184);
-                const emptyMsg = selectedScope === "approved"
-                    ? "No approved research submissions found."
-                    : selectedScope === "pending"
-                    ? "No pending research submissions found."
-                    : "No research records found matching the designated scope.";
-                doc.text(emptyMsg, marginX, currentY + 4);
-                currentY += 12;
-            } else {
-                const tableRows = targetFiles.map((file, idx) => {
-                    const displayId = "RF-" + String(idx + 1).padStart(4, "0");
-                    const statusStr = (file.status || "pending").toUpperCase();
-                    const reviewStr = file.reviewedDate || (file.status === "approved" ? "Approved" : "Pending");
-                    return [
-                        displayId,
-                        file.title || "Untitled Paper",
-                        file.researcher || "N/A",
-                        file.category || "General",
-                        file.publicationYear || "N/A",
-                        statusStr,
-                        reviewStr
-                    ];
-                });
+                if (targetFiles.length === 0) {
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(9);
+                    doc.setTextColor(148, 163, 184);
+                    const emptyMsg = selectedScope === "approved"
+                        ? "No approved research submissions found."
+                        : selectedScope === "pending"
+                            ? "No pending research submissions found."
+                            : "No research records found matching the designated scope.";
+                    doc.text(emptyMsg, marginX, currentY + 4);
+                    currentY += 12;
+                } else {
+                    const tableRows = targetFiles.map((file, idx) => {
+                        const displayId = "RF-" + String(idx + 1).padStart(4, "0");
+                        const statusStr = (file.status || "pending").toUpperCase();
+                        const reviewStr = file.reviewedDate || file.dateUploaded || "N/A";
+                        return [
+                            displayId,
+                            file.title || "Untitled Paper",
+                            file.researcher || "N/A",
+                            file.category || "General",
+                            file.publicationYear || "N/A",
+                            statusStr,
+                            reviewStr
+                        ];
+                    });
 
-                doc.autoTable({
-                    startY: currentY,
-                    head: [["ID", "Research Title", "Lead Researcher", "Category", "Year", "Status", "Review Date"]],
-                    body: tableRows,
-                    theme: "grid",
-                    margin: { left: marginX, right: marginX },
-                    styles: {
-                        fontSize: 7.5,
-                        cellPadding: 2.2,
-                        lineColor: [226, 232, 240],
-                        lineWidth: 0.2,
-                        valign: "middle"
-                    },
-                    headStyles: {
-                        fillColor: [30, 58, 138],
-                        textColor: [255, 255, 255],
-                        fontStyle: "bold",
-                        halign: "left"
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 16, fontStyle: "bold" },
-                        1: { cellWidth: 62 },
-                        2: { cellWidth: 34 },
-                        3: { cellWidth: 26 },
-                        4: { cellWidth: 12, halign: "center" },
-                        5: { cellWidth: 16, halign: "center", fontStyle: "bold" },
-                        6: { cellWidth: 16, halign: "center" }
-                    },
-                    didParseCell: function (data) {
-                        if (data.section === "body" && data.column.index === 5) {
-                            if (data.cell.raw === "APPROVED") {
-                                data.cell.styles.textColor = [22, 163, 74];
-                            } else if (data.cell.raw === "REJECTED") {
-                                data.cell.styles.textColor = [148, 163, 184];
-                            } else {
-                                data.cell.styles.textColor = [217, 119, 6];
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [["ID", "Research Title", "Lead Researcher", "Category", "Year", "Status", "Review Date"]],
+                        body: tableRows,
+                        theme: "grid",
+                        margin: { left: marginX, right: marginX },
+                        styles: {
+                            fontSize: 7.5,
+                            cellPadding: 2.2,
+                            lineColor: [226, 232, 240],
+                            lineWidth: 0.2,
+                            valign: "middle"
+                        },
+                        headStyles: {
+                            fillColor: [30, 58, 138],
+                            textColor: [255, 255, 255],
+                            fontStyle: "bold",
+                            halign: "left"
+                        },
+                        columnStyles: {
+                            0: { cellWidth: 16, fontStyle: "bold" },
+                            1: { cellWidth: 62 },
+                            2: { cellWidth: 34 },
+                            3: { cellWidth: 26 },
+                            4: { cellWidth: 12, halign: "center" },
+                            5: { cellWidth: 16, halign: "center", fontStyle: "bold" },
+                            6: { cellWidth: 16, halign: "center" }
+                        },
+                        didParseCell: function (data) {
+                            if (data.section === "body" && data.column.index === 5) {
+                                if (data.cell.raw === "APPROVED") {
+                                    data.cell.styles.textColor = [22, 163, 74];
+                                } else if (data.cell.raw === "REJECTED") {
+                                    data.cell.styles.textColor = [148, 163, 184];
+                                } else {
+                                    data.cell.styles.textColor = [217, 119, 6];
+                                }
                             }
                         }
+                    });
+
+                    currentY = doc.lastAutoTable.finalY + 12;
+                }
+            }
+
+            // -------------------------------------------------------------
+            // MODULE C: READERSHIP & PHYSICAL QR SCAN AUDIT
+            // -------------------------------------------------------------
+            if (config.modules.downloads) {
+                drawSectionHeading("Module C: Research Readership & Physical QR Scan Audit");
+
+                const totalDl = downloadsList.length;
+                const qrScans = downloadsList.filter(d => (d.user_email && d.user_email.includes("qr-guest")) || (d.user_name && d.user_name.includes("QR"))).length;
+                const facultyDl = totalDl - qrScans;
+
+                // Metric pills
+                const dlPillWidth = (contentWidth - 8) / 3;
+                const pillY = currentY;
+
+                const dlMetrics = [
+                    { label: "Total Document Downloads", value: String(totalDl), color: [30, 58, 138] },
+                    { label: "Faculty Portal Downloads", value: String(facultyDl), color: [22, 163, 74] },
+                    { label: "Hard-Copy QR Guest Scans", value: String(qrScans), color: [147, 51, 234] }
+                ];
+
+                dlMetrics.forEach((m, idx) => {
+                    const px = marginX + idx * (dlPillWidth + 4);
+                    doc.setFillColor(248, 250, 252);
+                    doc.setDrawColor(226, 232, 240);
+                    doc.roundedRect(px, pillY, dlPillWidth, 14, 2, 2, "FD");
+
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(11);
+                    doc.setTextColor(...m.color);
+                    doc.text(m.value, px + dlPillWidth / 2, pillY + 6.5, { align: "center" });
+
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(7);
+                    doc.setTextColor(100, 116, 139);
+                    doc.text(m.label.toUpperCase(), px + dlPillWidth / 2, pillY + 11.5, { align: "center" });
+                });
+
+                currentY = pillY + 20;
+
+                // Compute Top Downloaded Research Papers
+                const paperDownloadCounts = {};
+                downloadsList.forEach(d => {
+                    const title = d.file_title || "Unknown Document";
+                    const cat = d.file_category || "General";
+                    if (!paperDownloadCounts[title]) {
+                        paperDownloadCounts[title] = { title, category: cat, total: 0, qr: 0, faculty: 0 };
+                    }
+                    paperDownloadCounts[title].total++;
+                    if (d.user_email && d.user_email.includes("qr-guest")) {
+                        paperDownloadCounts[title].qr++;
+                    } else {
+                        paperDownloadCounts[title].faculty++;
                     }
                 });
 
-                currentY = doc.lastAutoTable.finalY + 12;
-            }
-        }
+                const topDownloaded = Object.values(paperDownloadCounts)
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 8);
 
-        // -------------------------------------------------------------
-        // MODULE C: READERSHIP & PHYSICAL QR SCAN AUDIT
-        // -------------------------------------------------------------
-        if (config.modules.downloads) {
-            drawSectionHeading("Module C: Research Readership & Physical QR Scan Audit");
+                if (topDownloaded.length > 0) {
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(30, 41, 59);
+                    doc.text("Top Most Accessed Research Documents", marginX, currentY);
+                    currentY += 4;
 
-            const totalDl = downloadsList.length;
-            const qrScans = downloadsList.filter(d => (d.user_email && d.user_email.includes("qr-guest")) || (d.user_name && d.user_name.includes("QR"))).length;
-            const facultyDl = totalDl - qrScans;
+                    const dlRows = topDownloaded.map((item, idx) => [
+                        String(idx + 1),
+                        item.title,
+                        item.category,
+                        String(item.faculty),
+                        String(item.qr),
+                        String(item.total)
+                    ]);
 
-            // Metric pills
-            const dlPillWidth = (contentWidth - 8) / 3;
-            const pillY = currentY;
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [["Rank", "Research Document Title", "Category", "Faculty Portal", "QR Hard-Copy", "Total Accesses"]],
+                        body: dlRows,
+                        theme: "striped",
+                        margin: { left: marginX, right: marginX },
+                        styles: { fontSize: 7.5, cellPadding: 2 },
+                        headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: "bold" },
+                        columnStyles: {
+                            0: { cellWidth: 14, halign: "center", fontStyle: "bold" },
+                            1: { cellWidth: 82 },
+                            2: { cellWidth: 32 },
+                            3: { cellWidth: 18, halign: "center" },
+                            4: { cellWidth: 18, halign: "center" },
+                            5: { cellWidth: 18, halign: "center", fontStyle: "bold", textColor: [30, 58, 138] }
+                        }
+                    });
 
-            const dlMetrics = [
-                { label: "Total Document Downloads", value: String(totalDl), color: [30, 58, 138] },
-                { label: "Faculty Portal Downloads", value: String(facultyDl), color: [22, 163, 74] },
-                { label: "Hard-Copy QR Guest Scans", value: String(qrScans), color: [147, 51, 234] }
-            ];
-
-            dlMetrics.forEach((m, idx) => {
-                const px = marginX + idx * (dlPillWidth + 4);
-                doc.setFillColor(248, 250, 252);
-                doc.setDrawColor(226, 232, 240);
-                doc.roundedRect(px, pillY, dlPillWidth, 14, 2, 2, "FD");
-
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(11);
-                doc.setTextColor(...m.color);
-                doc.text(m.value, px + dlPillWidth / 2, pillY + 6.5, { align: "center" });
-
-                doc.setFont("helvetica", "normal");
-                doc.setFontSize(7);
-                doc.setTextColor(100, 116, 139);
-                doc.text(m.label.toUpperCase(), px + dlPillWidth / 2, pillY + 11.5, { align: "center" });
-            });
-
-            currentY = pillY + 20;
-
-            // Compute Top Downloaded Research Papers
-            const paperDownloadCounts = {};
-            downloadsList.forEach(d => {
-                const title = d.file_title || "Unknown Document";
-                const cat = d.file_category || "General";
-                if (!paperDownloadCounts[title]) {
-                    paperDownloadCounts[title] = { title, category: cat, total: 0, qr: 0, faculty: 0 };
-                }
-                paperDownloadCounts[title].total++;
-                if (d.user_email && d.user_email.includes("qr-guest")) {
-                    paperDownloadCounts[title].qr++;
+                    currentY = doc.lastAutoTable.finalY + 12;
                 } else {
-                    paperDownloadCounts[title].faculty++;
+                    doc.setFont("helvetica", "italic");
+                    doc.setFontSize(8);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text("No document download interactions recorded yet.", marginX, currentY);
+                    currentY += 10;
                 }
-            });
+            }
 
-            const topDownloaded = Object.values(paperDownloadCounts)
-                .sort((a, b) => b.total - a.total)
-                .slice(0, 8);
+            // -------------------------------------------------------------
+            // MODULE D: FACULTY & DEPARTMENT PRODUCTIVITY
+            // -------------------------------------------------------------
+            if (config.modules.faculty) {
+                drawSectionHeading("Module D: Faculty & Departmental Research Productivity");
 
-            if (topDownloaded.length > 0) {
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(8.5);
-                doc.setTextColor(30, 41, 59);
-                doc.text("Top Most Accessed Research Documents", marginX, currentY);
-                currentY += 4;
-
-                const dlRows = topDownloaded.map((item, idx) => [
-                    String(idx + 1),
-                    item.title,
-                    item.category,
-                    String(item.faculty),
-                    String(item.qr),
-                    String(item.total)
-                ]);
-
-                doc.autoTable({
-                    startY: currentY,
-                    head: [["Rank", "Research Document Title", "Category", "Faculty Portal", "QR Hard-Copy", "Total Accesses"]],
-                    body: dlRows,
-                    theme: "striped",
-                    margin: { left: marginX, right: marginX },
-                    styles: { fontSize: 7.5, cellPadding: 2 },
-                    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: "bold" },
-                    columnStyles: {
-                        0: { cellWidth: 14, halign: "center", fontStyle: "bold" },
-                        1: { cellWidth: 82 },
-                        2: { cellWidth: 32 },
-                        3: { cellWidth: 18, halign: "center" },
-                        4: { cellWidth: 18, halign: "center" },
-                        5: { cellWidth: 18, halign: "center", fontStyle: "bold", textColor: [30, 58, 138] }
+                // Group by department
+                const deptStats = {};
+                allFiles.forEach(f => {
+                    const dept = (f.department || "Unassigned / General").trim();
+                    if (!deptStats[dept]) {
+                        deptStats[dept] = { total: 0, approved: 0, pending: 0, rejected: 0 };
                     }
+                    deptStats[dept].total++;
+                    if (f.status === "approved") deptStats[dept].approved++;
+                    else if (f.status === "rejected") deptStats[dept].rejected++;
+                    else deptStats[dept].pending++;
                 });
 
-                currentY = doc.lastAutoTable.finalY + 12;
-            } else {
-                doc.setFont("helvetica", "italic");
-                doc.setFontSize(8);
-                doc.setTextColor(148, 163, 184);
-                doc.text("No document download interactions recorded yet.", marginX, currentY);
-                currentY += 10;
-            }
-        }
-
-        // -------------------------------------------------------------
-        // MODULE D: FACULTY & DEPARTMENT PRODUCTIVITY
-        // -------------------------------------------------------------
-        if (config.modules.faculty) {
-            drawSectionHeading("Module D: Faculty & Departmental Research Productivity");
-
-            // Group by department
-            const deptStats = {};
-            allFiles.forEach(f => {
-                const dept = (f.department || "Unassigned / General").trim();
-                if (!deptStats[dept]) {
-                    deptStats[dept] = { total: 0, approved: 0, pending: 0, rejected: 0 };
-                }
-                deptStats[dept].total++;
-                if (f.status === "approved") deptStats[dept].approved++;
-                else if (f.status === "rejected") deptStats[dept].rejected++;
-                else deptStats[dept].pending++;
-            });
-
-            const deptRows = Object.entries(deptStats).map(([name, s]) => {
-                const rate = Math.round((s.approved / (s.total || 1)) * 100) + "%";
-                return [name, String(s.total), String(s.approved), String(s.pending), String(s.rejected), rate];
-            });
-
-            if (deptRows.length > 0) {
-                doc.autoTable({
-                    startY: currentY,
-                    head: [["Academic Department / Strand", "Submissions", "Approved", "Pending", "Rejected", "Approval Rate"]],
-                    body: deptRows,
-                    theme: "striped",
-                    margin: { left: marginX, right: marginX },
-                    styles: { fontSize: 7.5, cellPadding: 2 },
-                    headStyles: { fillColor: [15, 118, 110], textColor: [255, 255, 255], fontStyle: "bold" },
-                    columnStyles: {
-                        0: { cellWidth: 72, fontStyle: "bold" },
-                        1: { cellWidth: 22, halign: "center" },
-                        2: { cellWidth: 22, halign: "center", textColor: [22, 163, 74] },
-                        3: { cellWidth: 22, halign: "center", textColor: [217, 119, 6] },
-                        4: { cellWidth: 22, halign: "center", textColor: [148, 163, 184] },
-                        5: { cellWidth: 22, halign: "center", fontStyle: "bold", textColor: [15, 118, 110] }
-                    }
+                const deptRows = Object.entries(deptStats).map(([name, s]) => {
+                    const rate = Math.round((s.approved / (s.total || 1)) * 100) + "%";
+                    return [name, String(s.total), String(s.approved), String(s.pending), String(s.rejected), rate];
                 });
 
-                currentY = doc.lastAutoTable.finalY + 12;
+                if (deptRows.length > 0) {
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [["Academic Department / Strand", "Submissions", "Approved", "Pending", "Rejected", "Approval Rate"]],
+                        body: deptRows,
+                        theme: "striped",
+                        margin: { left: marginX, right: marginX },
+                        styles: { fontSize: 7.5, cellPadding: 2 },
+                        headStyles: { fillColor: [15, 118, 110], textColor: [255, 255, 255], fontStyle: "bold" },
+                        columnStyles: {
+                            0: { cellWidth: 72, fontStyle: "bold" },
+                            1: { cellWidth: 22, halign: "center" },
+                            2: { cellWidth: 22, halign: "center", textColor: [22, 163, 74] },
+                            3: { cellWidth: 22, halign: "center", textColor: [217, 119, 6] },
+                            4: { cellWidth: 22, halign: "center", textColor: [148, 163, 184] },
+                            5: { cellWidth: 22, halign: "center", fontStyle: "bold", textColor: [15, 118, 110] }
+                        }
+                    });
+
+                    currentY = doc.lastAutoTable.finalY + 12;
+                }
             }
-        }
 
-        // -------------------------------------------------------------
-        // RUNNING HEADERS & FOOTERS ON ALL PAGES
-        // -------------------------------------------------------------
-        const totalPages = doc.internal.getNumberOfPages();
+            // -------------------------------------------------------------
+            // RUNNING HEADERS & FOOTERS ON ALL PAGES
+            // -------------------------------------------------------------
+            const totalPages = doc.internal.getNumberOfPages();
 
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
 
-            // Running Header on Page 2 and above
-            if (i > 1) {
-                doc.setFont("helvetica", "normal");
-                doc.setFontSize(7);
-                doc.setTextColor(148, 163, 184);
-                doc.text("REFMANSY • EXECUTIVE REPORT", marginX, 9);
-                doc.text("CONFIDENTIAL", pageWidth - marginX, 9, { align: "right" });
+                // Running Header on Page 2 and above
+                if (i > 1) {
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(7);
+                    doc.setTextColor(148, 163, 184);
+                    doc.text("REFMANSY • EXECUTIVE REPORT", marginX, 9);
+                    doc.text("CONFIDENTIAL", pageWidth - marginX, 9, { align: "right" });
 
+                    doc.setDrawColor(226, 232, 240);
+                    doc.setLineWidth(0.3);
+                    doc.line(marginX, 11, pageWidth - marginX, 11);
+                }
+
+                // Running Footer on every page
+                const footerY = pageHeight - 9;
                 doc.setDrawColor(226, 232, 240);
                 doc.setLineWidth(0.3);
-                doc.line(marginX, 11, pageWidth - marginX, 11);
+                doc.line(marginX, footerY - 3, pageWidth - marginX, footerY - 3);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(7);
+                doc.setTextColor(148, 163, 184);
+                doc.text("Refmansy Reference Management System • Executive Report", marginX, footerY);
+
+                const pageStr = `Page ${i} of ${totalPages}`;
+                doc.text(pageStr, pageWidth - marginX, footerY, { align: "right" });
             }
 
-            // Running Footer on every page
-            const footerY = pageHeight - 9;
-            doc.setDrawColor(226, 232, 240);
-            doc.setLineWidth(0.3);
-            doc.line(marginX, footerY - 3, pageWidth - marginX, footerY - 3);
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(7);
-            doc.setTextColor(148, 163, 184);
-            doc.text("Refmansy Reference Management System • Executive Report", marginX, footerY);
-
-            const pageStr = `Page ${i} of ${totalPages}`;
-            doc.text(pageStr, pageWidth - marginX, footerY, { align: "right" });
+            // -------------------------------------------------------------
+            // TRIGGER FILE DOWNLOAD
+            // -------------------------------------------------------------
+            const fileDate = new Date().toISOString().split("T")[0];
+            const fileName = `REFMANSY_Report_${fileDate}.pdf`;
+            doc.save(fileName);
         }
 
-        // -------------------------------------------------------------
-        // TRIGGER FILE DOWNLOAD
-        // -------------------------------------------------------------
-        const fileDate = new Date().toISOString().split("T")[0];
-        const fileName = `REFMANSY_Report_${fileDate}.pdf`;
-        doc.save(fileName);
-    }
-
-    // Expose on global window object
-    window.refmansyPdfGenerator = {
-        generateModularPdfReport
-    };
-})();
+        // Expose on global window object
+        window.refmansyPdfGenerator = {
+            generateModularPdfReport
+        };
+    }) ();

@@ -140,8 +140,8 @@ function renderTable(files) {
             <td>${file.reviewComment ? escapeHtml(file.reviewComment) : "<em>No comment</em>"}</td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="view-button view-btn" title="View Details">
-                        <i class="fa-regular fa-eye"></i> View
+                    <button type="button" class="view-button view-btn" title="Details">
+                        <i class="fa-solid fa-circle-info"></i> Details
                     </button>
                     ${
                         file.filePath
@@ -229,17 +229,6 @@ function setupModal() {
                 } catch (err) {
                     alert("Failed to delete research file: " + (err.message || err));
                 }
-            }
-        });
-    }
-
-    const viewBtn = document.getElementById("viewFileButton");
-    if (viewBtn) {
-        viewBtn.addEventListener("click", async function () {
-            if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.openDocumentInNewTab(selectedFile.filePath);
-            } else {
-                alert("No file attached to this research submission.");
             }
         });
     }

@@ -209,22 +209,6 @@ function filterReport() {
 
     renderReportTable(filtered);
     updateExecutiveInsights(filtered);
-    updateExportModalCounts();
-}
-
-function updateExportModalCounts() {
-    const approvedCount = researchFiles.filter(f => (f.status || "").toLowerCase() === "approved").length;
-    const pendingCount = researchFiles.filter(f => (f.status || "").toLowerCase() === "pending").length;
-    const totalCount = researchFiles.length;
-
-    const approvedBadge = document.getElementById("approvedCountBadge");
-    if (approvedBadge) approvedBadge.textContent = approvedCount;
-
-    const pendingBadge = document.getElementById("pendingCountBadge");
-    if (pendingBadge) pendingBadge.textContent = pendingCount;
-
-    const totalBadge = document.getElementById("totalCountBadge");
-    if (totalBadge) totalBadge.textContent = totalCount;
 }
 
 function updateExecutiveInsights(files) {
@@ -235,7 +219,7 @@ function updateExecutiveInsights(files) {
     const scopeBadge = document.getElementById("findingsScopeBadge");
     const isFiltered = (files.length !== researchFiles.length);
     if (scopeBadge) {
-        scopeBadge.innerHTML = isFiltered 
+        scopeBadge.innerHTML = isFiltered
             ? `<i class="fa-solid fa-filter"></i> Filtered View (${files.length} of ${researchFiles.length} records)`
             : `<i class="fa-solid fa-layer-group"></i> All Repository Records (${files.length} total)`;
     }
@@ -294,8 +278,8 @@ function renderReportTable(files) {
             file.status === "approved"
                 ? `<span class="status-badge status-approved">Approved</span>`
                 : file.status === "rejected"
-                ? `<span class="status-badge status-rejected">Rejected</span>`
-                : `<span class="status-badge status-pending">Pending</span>`;
+                    ? `<span class="status-badge status-rejected">Rejected</span>`
+                    : `<span class="status-badge status-pending">Pending</span>`;
 
         row.innerHTML = `
             <td><strong>${displayId}</strong></td>
@@ -318,189 +302,124 @@ function displayGeneratedDate() {
 }
 
 function setupReportButtons() {
-    const exportBtn = document.getElementById("exportCsvButton");
-    if (exportBtn) {
-        exportBtn.addEventListener("click", exportToCSV);
-    }
-
-    setupPdfExportModal();
-}
-
-function setupPdfExportModal() {
-    const openBtn = document.getElementById("openExportPdfModalButton");
-    const modal = document.getElementById("exportPdfModal");
-    const closeBtn = document.getElementById("closeExportModalBtn");
-    const cancelBtn = document.getElementById("cancelExportBtn");
-    const generateBtn = document.getElementById("generatePdfBtn");
-    const alertBox = document.getElementById("exportModalAlert");
-
-    if (!openBtn || !modal) return;
-
-    const moduleCheckboxes = {
-        executive: document.getElementById("moduleExecutive"),
-        catalog: document.getElementById("moduleCatalog"),
-        downloads: document.getElementById("moduleDownloads"),
-        faculty: document.getElementById("moduleFaculty")
-    };
-
-    function openModal() {
-        updateExportModalCounts();
-
-        if (alertBox) {
-            alertBox.style.display = "none";
-            alertBox.textContent = "";
+        const exportCsvBtn = document.getElementById("exportCsvButton");
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener("click", exportToCSV);
         }
 
-        modal.classList.add("active");
+        const exportPdfBtn = document.getElementById("openExportPdfModalButton") || document.getElementById("exportPdfButton");
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener("click", exportConsolidatedPDF);
+        }
     }
 
-    function closeModal() {
-        modal.classList.remove("active");
-    }
+        async function exportConsolidatedPDF() {
+            const exportPdfBtn = document.getElementById("openExportPdfModalButton") || document.getElementById("exportPdfButton");
+            if (!exportPdfBtn) return;
 
-    openBtn.addEventListener("click", openModal);
-    if (closeBtn) closeBtn.addEventListener("click", closeModal);
-    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+            const originalHtml = exportPdfBtn.innerHTML;
+            exportPdfBtn.disabled = true;
+            exportPdfBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Exporting PDF...`;
 
-    modal.addEventListener("click", function (e) {
-        if (e.target === modal) closeModal();
-    });
-
-    // Sync card active style with checkbox toggles
-    Object.values(moduleCheckboxes).forEach(cb => {
-        if (!cb) return;
-        const card = cb.closest(".module-card");
-        cb.addEventListener("change", () => {
-            if (card) {
-                if (cb.checked) card.classList.add("active");
-                else card.classList.remove("active");
-            }
-        });
-    });
-
-    // Generate PDF action
-    if (generateBtn) {
-        generateBtn.addEventListener("click", async function () {
-            if (alertBox) {
-                alertBox.style.display = "none";
-                alertBox.textContent = "";
-            }
-
-            const modules = {
-                executive: moduleCheckboxes.executive?.checked || false,
-                catalog: moduleCheckboxes.catalog?.checked || false,
-                downloads: moduleCheckboxes.downloads?.checked || false,
-                faculty: moduleCheckboxes.faculty?.checked || false
-            };
-
-            const anySelected = Object.values(modules).some(Boolean);
-            if (!anySelected) {
-                if (alertBox) {
-                    alertBox.textContent = "Select at least one section to export.";
-                    alertBox.style.display = "block";
-                }
-                return;
-            }
-
-            const catalogScope = document.querySelector('input[name="catalogScope"]:checked')?.value || "approved";
-
-            const originalHtml = generateBtn.innerHTML;
-            generateBtn.disabled = true;
-            generateBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Generating PDF...</span>`;
-
-            try {
-                // Fetch supplemental data if needed
-                if (modules.downloads && !cachedDownloads) {
                     try {
-                        cachedDownloads = await window.refmansyApi.downloads.getAllDownloads();
-                    } catch (e) {
-                        console.warn("Could not fetch downloads for PDF:", e);
-                        cachedDownloads = [];
-                    }
+                        if (!window.refmansyPdfGenerator || !window.refmansyPdfGenerator.generateModularPdfReport) {
+                            throw new Error("PDF Generator module is not available. Please refresh the page.");
+                        }
+
+                                // Fetch supplemental analytics data if not yet cached
+                                if (!cachedDownloads) {
+                                    try {
+                                        cachedDownloads = await window.refmansyApi.downloads.getAllDownloads();
+                                    } catch (e) {
+                                        console.warn("Could not fetch downloads for PDF:", e);
+                                        cachedDownloads = [];
+                                    }
                 }
 
-                if (modules.faculty && !cachedUsers) {
-                    try {
-                        cachedUsers = await window.refmansyApi.users.getAll();
-                    } catch (e) {
-                        console.warn("Could not fetch users for PDF:", e);
-                        cachedUsers = [];
-                    }
+                            if (!cachedUsers) {
+                                try {
+                                    cachedUsers = await window.refmansyApi.users.getAll();
+                                } catch (e) {
+                                    console.warn("Could not fetch users for PDF:", e);
+                                    cachedUsers = [];
+                                }
+                            }
+
+                            const adminName = currentProfile?.full_name || currentProfile?.username || "Administrator";
+                            const adminRole = currentProfile?.role || "admin";
+
+                            // Check if any report filters are currently active on the page
+                            const isFilterActive =
+                                (searchInput && searchInput.value.trim() !== "") ||
+                                (categoryFilter && categoryFilter.value !== "all") ||
+                                (statusFilter && statusFilter.value !== "all") ||
+                                (startDateInput && startDateInput.value !== "") ||
+                                (endDateInput && endDateInput.value !== "");
+
+                                await window.refmansyPdfGenerator.generateModularPdfReport(
+                                    {
+                                        modules: {
+                                            executive: true,
+                                            catalog: true,
+                                            downloads: true,
+                                            faculty: true
+                                        },
+                                        catalogScope: isFilterActive ? "filtered" : "all",
+                                        adminName,
+                                        adminRole
+                                    },
+                                    {
+                                        allFiles: researchFiles,
+                                        filteredFiles: filteredResearchFiles,
+                                        categoriesList: categoriesList,
+                                        downloadsList: cachedDownloads || [],
+                                        usersList: cachedUsers || []
+                                    }
+        );
+                } catch (err) {
+                    console.error("PDF generation failed:", err);
+                    alert(`PDF Generation Error: ${err.message || "An unexpected error occurred."}`);
+                } finally {
+                    exportPdfBtn.disabled = false;
+                    exportPdfBtn.innerHTML = originalHtml;
                 }
-
-                const adminName = currentProfile?.full_name || currentProfile?.username || "Administrator";
-                const adminRole = currentProfile?.role || "admin";
-
-                if (!window.refmansyPdfGenerator || !window.refmansyPdfGenerator.generateModularPdfReport) {
-                    throw new Error("PDF Generator module is not available. Please refresh the page.");
-                }
-
-                await window.refmansyPdfGenerator.generateModularPdfReport(
-                    {
-                        modules,
-                        catalogScope,
-                        adminName,
-                        adminRole
-                    },
-                    {
-                        allFiles: researchFiles,
-                        filteredFiles: filteredResearchFiles,
-                        categoriesList: categoriesList,
-                        downloadsList: cachedDownloads || [],
-                        usersList: cachedUsers || []
-                    }
-                );
-
-                closeModal();
-            } catch (err) {
-                console.error("PDF generation failed:", err);
-                if (alertBox) {
-                    alertBox.textContent = `PDF Generation Error: ${err.message || "An unexpected error occurred."}`;
-                    alertBox.style.display = "block";
-                }
-            } finally {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = originalHtml;
             }
-        });
-    }
-}
 
-function exportToCSV() {
-    if (!researchFiles || researchFiles.length === 0) {
-        alert("No research data available to export.");
-        return;
-    }
+            function exportToCSV() {
+                if (!researchFiles || researchFiles.length === 0) {
+                    alert("No research data available to export.");
+                    return;
+                }
 
-    const headers = ["ID", "Title", "Researcher", "Category", "Publication Year", "Department", "Status", "Uploaded By", "Date Uploaded"];
-    const rows = researchFiles.map((f, i) => [
-        `"RF-${String(i + 1).padStart(4, "0")}"`,
-        `"${(f.title || "").replace(/"/g, '""')}"`,
-        `"${(f.researcher || "").replace(/"/g, '""')}"`,
-        `"${(f.category || "").replace(/"/g, '""')}"`,
-        `"${f.publicationYear || ""}"`,
-        `"${(f.department || "").replace(/"/g, '""')}"`,
-        `"${f.status || ""}"`,
-        `"${(f.uploadedBy || "").replace(/"/g, '""')}"`,
-        `"${f.dateUploaded || ""}"`
-    ]);
+                const headers = ["ID", "Title", "Researcher", "Category", "Publication Year", "Department", "Status", "Uploaded By", "Date Uploaded"];
+                const rows = researchFiles.map((f, i) => [
+                    `"RF-${String(i + 1).padStart(4, "0")}"`,
+                    `"${(f.title || "").replace(/"/g, '""')}"`,
+                    `"${(f.researcher || "").replace(/"/g, '""')}"`,
+                    `"${(f.category || "").replace(/"/g, '""')}"`,
+                    `"${f.publicationYear || ""}"`,
+                    `"${(f.department || "").replace(/"/g, '""')}"`,
+                    `"${f.status || ""}"`,
+                    `"${(f.uploadedBy || "").replace(/"/g, '""')}"`,
+                    `"${f.dateUploaded || ""}"`
+                ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `refmansy_report_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `refmansy_report_${new Date().toISOString().split("T")[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
 
-function escapeHtml(str) {
-    if (!str) return "";
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
+            function escapeHtml(str) {
+                if (!str) return "";
+                return String(str)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }

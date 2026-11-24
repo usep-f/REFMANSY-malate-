@@ -240,7 +240,7 @@ textarea {
     gap: 10px;
 }
 
-.header-user > div:first-child {
+.header-user>div:first-child {
     text-align: right;
 }
 
@@ -294,7 +294,7 @@ textarea {
     box-shadow: 0 0 0 3px rgba(115, 174, 231, 0.15);
 }
 
-.main-search-box > i {
+.main-search-box>i {
     color: #89949e;
     font-size: 16px;
 }
@@ -507,6 +507,7 @@ textarea {
     margin-bottom: 12px;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -532,7 +533,7 @@ textarea {
     border-top: 1px solid #f1f5f9;
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    align-items: center;
 }
 
 .btn-card {
@@ -785,7 +786,7 @@ textarea {
         gap: 18px;
     }
 
-    .header-user > div:first-child {
+    .header-user>div:first-child {
         text-align: left;
     }
 

@@ -121,19 +121,12 @@ function renderTable(files) {
             <td><span class="status-label"><i class="fa-solid fa-circle-check"></i> Approved</span></td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="view-button view-btn" title="View Details">
-                        <i class="fa-regular fa-eye"></i> View
+                    <button type="button" class="view-button view-btn" title="Details">
+                        <i class="fa-solid fa-circle-info"></i> Details
                     </button>
                     <button type="button" class="view-button qr-btn" title="Hard-Copy QR Sticker" style="background-color: var(--dark-blue); margin-left: 5px;">
                         <i class="fa-solid fa-qrcode"></i>
                     </button>
-                    ${
-                        file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="View Document" style="background-color: var(--approved-green); margin-left: 5px;">
-                                <i class="fa-regular fa-file-pdf"></i> View
-                               </button>`
-                            : ""
-                    }
                 </div>
             </td>
         `;
@@ -143,13 +136,6 @@ function renderTable(files) {
         const qrBtn = row.querySelector(".qr-btn");
         if (qrBtn) {
             qrBtn.addEventListener("click", () => openQrModal(file, displayId));
-        }
-
-        const dlBtn = row.querySelector(".download-btn");
-        if (dlBtn) {
-            dlBtn.addEventListener("click", () => {
-                window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
-            });
         }
 
         approvedFilesTable.appendChild(row);

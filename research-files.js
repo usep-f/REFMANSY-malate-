@@ -179,16 +179,9 @@ function renderTable(files) {
             <td>${statusBadge}</td>
             <td>
                 <div class="table-actions">
-                    <button type="button" class="view-button view-btn" title="Review & Details">
-                        <i class="fa-regular fa-eye"></i> View
+                    <button type="button" class="view-button view-btn" title="Details">
+                        <i class="fa-solid fa-circle-info"></i> Details
                     </button>
-                    ${
-                        file.filePath
-                            ? `<button type="button" class="view-button download-btn" title="View Document" style="background-color: var(--dark-blue); margin-left: 5px;">
-                                <i class="fa-regular fa-file-pdf"></i> View
-                               </button>`
-                            : ""
-                    }
                     <button type="button" class="view-button delete-btn" title="Delete Research File" style="background-color: #ef4444; margin-left: 5px;">
                         <i class="fa-solid fa-trash"></i>
                     </button>
@@ -197,13 +190,6 @@ function renderTable(files) {
         `;
 
         row.querySelector(".view-btn").addEventListener("click", () => openModal(file));
-
-        const dlBtn = row.querySelector(".download-btn");
-        if (dlBtn) {
-            dlBtn.addEventListener("click", () => {
-                window.refmansyApi.storage.openDocumentInNewTab(file.filePath);
-            });
-        }
 
         const deleteRowBtn = row.querySelector(".delete-btn");
         if (deleteRowBtn) {
@@ -230,19 +216,6 @@ function setupModal() {
     if (reviewModal) {
         reviewModal.addEventListener("click", function (e) {
             if (e.target === reviewModal) closeModal();
-        });
-    }
-
-    const viewDocBtn = document.getElementById("viewDocumentButton");
-    if (viewDocBtn) {
-        viewDocBtn.addEventListener("click", async function () {
-            if (selectedFile && selectedFile.filePath) {
-                await window.refmansyApi.storage.openDocumentInNewTab(
-                        selectedFile.filePath
-                    );
-            } else {
-                alert("No document file is attached to this submission.");
-            }
         });
     }
 
